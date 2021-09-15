@@ -163,10 +163,15 @@
             <artifactId>json-path</artifactId>
             <version>0.9.1</version>
         </dependency>
-        <dependency>
+        <dependency> <!-- TODO: deprecate -->
             <groupId>in.ashwanthkumar</groupId>
             <artifactId>slack-java-webhook</artifactId>
             <version>0.0.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.slack.api</groupId>
+            <artifactId>slack-api-client</artifactId>
+            <version>1.11.0</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>

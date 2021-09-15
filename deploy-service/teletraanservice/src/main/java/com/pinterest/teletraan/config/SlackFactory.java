@@ -25,18 +25,18 @@ import org.hibernate.validator.constraints.NotEmpty;
 public class SlackFactory implements ChatFactory {
     @NotEmpty
     @JsonProperty
-    private String url;
+    private String knoxKey;
 
-    public String getUrl() {
-        return url;
+    public String getKnoxKey() {
+        return knoxKey;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setKnoxKey(String knoxKey) {
+        this.knoxKey = knoxKey;
     }
 
     @Override
     public ChatManager create() throws Exception {
-        return new SlackChatManager(url);
+        return new SlackChatManager(knoxKey);
     }
 }
