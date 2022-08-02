@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # as we can and generate user friendly message there.
 class ExceptionHandlerMiddleware(object):
     def process_exception(self, request, exception):
-        logger.exception('Exception thrown when handling request ' + str(request))
+        logger.exception(f'Exception thrown when handling request {str(request)}')
 
         # Error is displayed as a fragment over related feature area
         if request.is_ajax():

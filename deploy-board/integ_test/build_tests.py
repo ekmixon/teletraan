@@ -60,16 +60,16 @@ class TestBuilds(unittest.TestCase):
         builds_helper.delete_build(commons.REQUEST, id3)
 
     def _generate_request(self, buildName, commit, branch="master"):
-        request = {}
-        request['name'] = buildName
-        request['type'] = "phabricator"
-        request['repo'] = "repo-1"
-        request['branch'] = branch
-        request['commit'] = commit
-        request['commitDate'] = int(round(time.time() * 1000))
-        request['artifactUrl'] = "https://whatever.com"
-        request['publishInfo'] = "jenkins12345"
-        return request
+        return {
+            'name': buildName,
+            'type': "phabricator",
+            'repo': "repo-1",
+            'branch': branch,
+            'commit': commit,
+            'commitDate': int(round(time.time() * 1000)),
+            'artifactUrl': "https://whatever.com",
+            'publishInfo': "jenkins12345",
+        }
 
 
 if __name__ == '__main__':

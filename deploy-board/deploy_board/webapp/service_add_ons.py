@@ -117,9 +117,9 @@ class RatelimitingAddOn(ServiceAddOn):
 
         tagHoverInfo_ = tagHoverInfo_.format(health=health, hosts=hosts, linkBlurb=linkBlurb, questions=questions)
 
-        self.tagHoverInfo = tagHoverInfo if tagHoverInfo else tagHoverInfo_
-        self.buttonUrl = buttonUrl if buttonUrl else buttonUrl_
-        self.tagInfo = tagInfo if tagInfo else tagInfo_
+        self.tagHoverInfo = tagHoverInfo or tagHoverInfo_
+        self.buttonUrl = buttonUrl or buttonUrl_
+        self.tagInfo = tagInfo or tagInfo_
         self.rateLimitingReport = rateLimitingReport
 
 
@@ -275,9 +275,12 @@ def getRatelimitingReport(serviceName, agentStats):
     if totalHosts > 1:
         commonHostPrefix += "*"
 
-    apiUrl = STATSBOARD_API_FORMAT.format(metric=metricStr,
-                                          tags="host=%s" % commonHostPrefix,
-                                          startTime="-%smin" % RatelimitingAddOn.MINUTES_BACK_TO_SEARCH)
+    apiUrl = STATSBOARD_API_FORMAT.format(
+        metric=metricStr,
+        tags=f"host={commonHostPrefix}",
+        startTime=f"-{RatelimitingAddOn.MINUTES_BACK_TO_SEARCH}min",
+    )
+
 
     try:
         statsboardData = restrictToHostsOnCurrentStage(getStatsboardData(apiUrl), hosts)
@@ -343,8 +346,9 @@ def getLatestLogUnixTime(topics, lognames, hostsOnStage, commonHostPrefix):
     if numHostsOnStage > 1:
         commonHostPrefix += "*"
 
-    metricTag = "host=%s,topic=%s,logname=%s" % (commonHostPrefix, topicsApiStr, lognamesApiStr)
-    startTime = "-%smin" % LogHealthReport.MINS_BACK_TO_CHECK
+    metricTag = f"host={commonHostPrefix},topic={topicsApiStr},logname={lognamesApiStr}"
+
+    startTime = f"-{LogHealthReport.MINS_BACK_TO_CHECK}min"
     apiUrl = STATSBOARD_API_FORMAT.format(metric=KAFKA_MSGS_DELIVERED_METRIC,
                                           tags=metricTag,
                                           startTime=startTime)
@@ -366,10 +370,7 @@ def getLatestLogUnixTime(topics, lognames, hostsOnStage, commonHostPrefix):
     if not statsboardDataConsistent(statsboardData, hostsOnStage):
         return None
 
-    if len(earliestMessages) == 0:
-        return -1
-
-    return max(earliestMessages, key=lambda d: d[0])[0]
+    return max(earliestMessages, key=lambda d: d[0])[0] if earliestMessages else -1
 
 def getLogHealthReport(configStr, report):
     """
@@ -399,8 +400,8 @@ def getLogHealthReport(configStr, report):
     topicsStr = configStr.split(":")[0]
     lognamesStr = configStr.split(":")[1]
 
-    topics = list(set([x.strip() for x in topicsStr.split(",")]))
-    lognames = list(set([x.strip() for x in lognamesStr.split(",")]))
+    topics = list({x.strip() for x in topicsStr.split(",")})
+    lognames = list({x.strip() for x in lognamesStr.split(",")})
 
     if not logCheckInputValid(topics, lognames):
         return LogHealthReport(topics=topics,
@@ -438,7 +439,7 @@ def getDashboardReport(serviceName, report):
 
     dashboardPageHtml = dashboardPage.read()
     state = ServiceAddOn.DEFAULT
-    dashboardDneString = "%s dashboard does not exist" % serviceName
+    dashboardDneString = f"{serviceName} dashboard does not exist"
     if dashboardDneString in dashboardPageHtml:
       state = ServiceAddOn.UNKNOWN
     return DashboardStateReport(state=state)
@@ -462,7 +463,7 @@ def getRatelimitingAddOn(serviceName, report):
 def getKafkaLoggingAddOn(serviceName, report, configStr=None):
     serviceName = serviceName.lower()
     logHealthReport = getLogHealthReport(configStr, report)
-    url = "/env/%s/%s/check_log_status" % (report.envName, report.stageName)
+    url = f"/env/{report.envName}/{report.stageName}/check_log_status"
     return KafkaLoggingAddOn(serviceName=serviceName,
                              buttonUrl=url,
                              state=ServiceAddOn.DEFAULT,
@@ -501,16 +502,14 @@ def logCheckInputValid(topics, lognames):
     for i in range(len(topics)):
         if not topics[i]:
             return False
-        if topics[i] == "*":
-            if len(topics) > 1:
-                return False
+        if topics[i] == "*" and len(topics) > 1:
+            return False
 
     for i in range(len(lognames)):
         if not lognames[i]:
             return False
-        if lognames[i] == "*":
-            if len(lognames) > 1:
-                return False
+        if lognames[i] == "*" and len(lognames) > 1:
+            return False
 
     return True
 
@@ -521,22 +520,20 @@ def getCommonHostPrefix(agentStats):
     :param agentStats:
     :return:
     """
-    hosts = []
-    for agentStat in agentStats:
-        if "hostName" in agentStat.agent:
-            hosts.append(agentStat.agent["hostName"])
+    hosts = [
+        agentStat.agent["hostName"]
+        for agentStat in agentStats
+        if "hostName" in agentStat.agent
+    ]
 
-    if len(hosts) == 0:
-        return ""
-
-    return os.path.commonprefix(hosts)
+    return os.path.commonprefix(hosts) if hosts else ""
 
 def getHosts(agentStats):
-    hosts = []
-    for agentStat in agentStats:
-        if "hostName" in agentStat.agent:
-            hosts.append(agentStat.agent["hostName"])
-    return hosts
+    return [
+        agentStat.agent["hostName"]
+        for agentStat in agentStats
+        if "hostName" in agentStat.agent
+    ]
 
 def statsboardDataConsistent(statsboardData, hostsOnStage):
     """
@@ -548,7 +545,6 @@ def statsboardDataConsistent(statsboardData, hostsOnStage):
     :return:
     """
 
-    numHostsOnCurrStage = len(hostsOnStage)
     if not statsboardData:
         return False
 
@@ -566,20 +562,16 @@ def statsboardDataConsistent(statsboardData, hostsOnStage):
         if "error" in dataSlice:
             return False
 
-    # There should only be one host type on each stage.
     if len(set(hostTypes)) > 1:
         return False
 
+    numHostsOnCurrStage = len(hostsOnStage)
     # We should not get results for more hosts than are on the current stage.
-    if len(set(hostsFound)) > numHostsOnCurrStage:
-        return False
-
-    # We should not receive results for any host that is not on the current stage.
-    for h in hostsFound:
-        if h not in hostsOnStage:
-            return False
-
-    return True
+    return (
+        False
+        if len(set(hostsFound)) > numHostsOnCurrStage
+        else all(h in hostsOnStage for h in hostsFound)
+    )
 
 def restrictToHostsOnCurrentStage(statsboardData, hostsOnCurrentStage):
     """
@@ -591,15 +583,13 @@ def restrictToHostsOnCurrentStage(statsboardData, hostsOnCurrentStage):
     :return:
     """
 
-    # NOTE: can be optimized if necessary.
-    newData = []
-    for dataSlice in statsboardData:
-        if "tags" in dataSlice:
-            if "host" in dataSlice["tags"]:
-                if dataSlice["tags"]["host"] in hostsOnCurrentStage:
-                    newData.append(dataSlice)
-
-    return newData
+    return [
+        dataSlice
+        for dataSlice in statsboardData
+        if "tags" in dataSlice
+        and "host" in dataSlice["tags"]
+        and dataSlice["tags"]["host"] in hostsOnCurrentStage
+    ]
 
 def getStatsboardData(apiUrl):
     """
@@ -611,10 +601,7 @@ def getStatsboardData(apiUrl):
     """
     url = urllib2.urlopen(apiUrl, timeout=ServiceAddOn.REQUEST_TIMEOUT_SECS)
     j = json.loads(url.read())
-    data = []
-    for i in range(len(j)):
-        data.append(j[i])
-    return data
+    return [j[i] for i in range(len(j))]
 
 
 

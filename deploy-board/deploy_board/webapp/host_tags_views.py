@@ -19,8 +19,9 @@ class HostTagsView(View):
             "env": env,
             "stages": stages
         }
-        deploy_constraint = environ_hosts_helper.get_deploy_constraint(request, name, stage)
-        if deploy_constraint:
+        if deploy_constraint := environ_hosts_helper.get_deploy_constraint(
+            request, name, stage
+        ):
             max_parallel = deploy_constraint.get("maxParallel", None)
             tag_name = deploy_constraint.get("constraintKey", None)
             context["tag_name"] = tag_name
@@ -56,10 +57,10 @@ def add_constraint(request, name, stage):
             'maxParallel': max_parallel,
             'constraintType': constraint_type
         })
-        return redirect('/env/{}/{}/constraint'.format(name, stage))
+        return redirect(f'/env/{name}/{stage}/constraint')
     except Exception as e:
         log.error("add constraint failed with {}", e)
-        return redirect('/env/{}/{}/constraint'.format(name, stage))
+        return redirect(f'/env/{name}/{stage}/constraint')
 
 
 def edit_constraint(request, name, stage):
@@ -74,7 +75,7 @@ def edit_constraint(request, name, stage):
             'maxParallel': max_parallel,
             'constraintType': constraint_type
         })
-        return redirect('/env/{}/{}/constraint'.format(name, stage))
+        return redirect(f'/env/{name}/{stage}/constraint')
     except Exception as e:
         log.error("get constraint failed with {}", e)
         return HttpResponse(json.dumps({'html': 'Failed to get deploy constraint.'}), status=500,
@@ -87,10 +88,10 @@ def remove_constraint(request, name, stage):
         tag_name = deploy_constraint.get('constraintKey')
         environ_hosts_helper.remove_deploy_constraint(request, name, stage)
         environ_hosts_helper.remove_host_tags(request, name, stage, tag_name)
-        return redirect('/env/{}/{}/constraint'.format(name, stage))
+        return redirect(f'/env/{name}/{stage}/constraint')
     except Exception as e:
         log.error("remove constraint failed with {}", e)
-        return redirect('/env/{}/{}/constraint'.format(name, stage))
+        return redirect(f'/env/{name}/{stage}/constraint')
 
 
 def get_constraint(request, name, stage):

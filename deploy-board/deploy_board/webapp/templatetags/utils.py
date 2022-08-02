@@ -212,7 +212,7 @@ def hotfixCanDeploy(value):
 
 @register.filter("hotfixCanCancel")
 def hotfixCanCancel(value):
-    return value == "INITIAL" or value == "BUILDING" or value == "PUSHING"
+    return value in ["INITIAL", "BUILDING", "PUSHING"]
 
 
 @register.filter("isUnknownHost")
@@ -227,7 +227,7 @@ def isProvisioningHost(value):
 
 @register.filter("agentRetryable")
 def agentRetryable(agent):
-    return agent['state'] != 'RESET' and agent['state'] != 'PAUSED_BY_USER' and agent['state'] != 'STOP'
+    return agent['state'] not in ['RESET', 'PAUSED_BY_USER', 'STOP']
 
 
 @register.filter("agentPausable")
@@ -299,10 +299,15 @@ def get_deploy_constraint_types(context):
 def get_advanced_config_names(context):
     configNames = []
     for value in environs_helper.DEPLOY_STAGE_VALUES:
-        if value != "UNKNOWN" and value != "SERVING_BUILD":
-            configNames.append(value + ".process_timeout")
-            configNames.append(value + ".termination_timeout")
-            configNames.append(value + ".max_retry")
+        if value not in ["UNKNOWN", "SERVING_BUILD"]:
+            configNames.extend(
+                (
+                    f"{value}.process_timeout",
+                    f"{value}.termination_timeout",
+                    f"{value}.max_retry",
+                )
+            )
+
     configNames.append("target")
     return configNames
 
@@ -397,31 +402,29 @@ def smartDate(timestamp):
         if second_diff < 10:
             return "just now"
         if second_diff < 60:
-            return str(second_diff) + " seconds ago"
+            return f"{str(second_diff)} seconds ago"
         if second_diff < 120:
             return "a minute ago"
         if second_diff < 3600:
-            return str(second_diff / 60) + " minutes ago"
+            return f"{str(second_diff / 60)} minutes ago"
         if second_diff < 7200:
             return "an hour ago"
         if second_diff < 86400:
-            return str(second_diff / 3600) + " hours ago"
+            return f"{str(second_diff / 3600)} hours ago"
     if day_diff == 1:
         return "Yesterday"
     if day_diff < 7:
-        return str(day_diff) + " days ago"
+        return f"{str(day_diff)} days ago"
     if day_diff < 31:
-        return str(day_diff / 7) + " weeks ago"
+        return f"{str(day_diff / 7)} weeks ago"
     if day_diff < 365:
-        return str(day_diff / 30) + " months ago"
-    return str(day_diff / 365) + " years ago"
+        return f"{str(day_diff / 30)} months ago"
+    return f"{str(day_diff / 365)} years ago"
 
 
 @register.filter("shortenDesc")
 def shortenDesc(value):
-    if not value or len(value) < 50:
-        return value
-    return value[:50] + '...'
+    return value if not value or len(value) < 50 else f'{value[:50]}...'
 
 
 def getTotalDuration(start, end=None):
@@ -455,18 +458,12 @@ def successRateTip(deploy):
 
 @register.filter("hostStateClass")
 def hostStateClass(state):
-    if state == "PENDING_TERMINATE" or state == "TERMINATING":
-        return "danger"
-    else:
-        return ""
+    return "danger" if state in ["PENDING_TERMINATE", "TERMINATING"] else ""
 
 
 @register.filter("agentStateClass")
 def agentStateClass(state):
-    if state == "UNREACHABLE":
-        return "danger"
-    else:
-        return ""
+    return "danger" if state == "UNREACHABLE" else ""
 
 
 @register.filter("warnIfOld")
@@ -484,10 +481,7 @@ def warnIfOld(timestamp):
 # TODO is there a better way to handle this
 @register.filter("commitRepoType")
 def commitRepoType(repo):
-    if "/" in repo:
-        return "Github"
-    else:
-        return "Phabricator"
+    return "Github" if "/" in repo else "Phabricator"
 
 
 @register.filter("commitIcon")
@@ -503,10 +497,7 @@ def commitIcon(build):
 
 @register.filter("branchAndCommit")
 def branchAndCommit(build):
-    if build:
-        return "%s/%s" % (build['branch'], build['commitShort'])
-    else:
-        return "UNKNOWN"
+    return f"{build['branch']}/{build['commitShort']}" if build else "UNKNOWN"
 
 
 @register.filter("percentize")
@@ -519,54 +510,53 @@ def agentTip(agentStats):
     agent = agentStats.agent
     hostname = agent["hostName"]
     if agentStats.isStale:
-        return "{}: Agent information is stale".format(hostname)
+        return f"{hostname}: Agent information is stale"
 
     if agent["state"] == "PAUSED_BY_USER":
         msg = _AGENT_STATES_TO_TIPS.get("PAUSED_BY_USER")
-        return "{}: {}".format(hostname, msg)
+        return f"{hostname}: {msg}"
 
     if agent["state"] == "PAUSED_BY_SYSTEM":
         msg = _AGENT_STATES_TO_TIPS.get("PAUSED_BY_SYSTEM")
-        return "{}: {}".format(hostname, msg)
+        return f"{hostname}: {msg}"
 
     if agent["state"] == "DELETE":
         msg = _AGENT_STATES_TO_TIPS.get("DELETE")
-        return "{}: {}".format(hostname, msg)
+        return f"{hostname}: {msg}"
 
     if agent["state"] == "UNREACHABLE":
         msg = _AGENT_STATES_TO_TIPS.get("UNREACHABLE")
-        return "{}: {}".format(hostname, msg)
+        return f"{hostname}: {msg}"
 
     if agent["state"] == "STOP":
         msg = _AGENT_STATES_TO_TIPS.get("STOP")
-        return "{}: {}".format(hostname, msg)
+        return f"{hostname}: {msg}"
 
     if agentStats.isCurrent:
         if agent["deployStage"] == "SERVING_BUILD":
-            return "{}: Agent is serving the current build successfully".format(hostname)
+            return f"{hostname}: Agent is serving the current build successfully"
         else:
-            if is_agent_failed(agent):
-                return "{}: Agent is deploying current build with failures, click to see more detail".format(
-                    hostname)
-            else:
-                return "{}: Agent is deploying current build".format(hostname)
+            return (
+                f"{hostname}: Agent is deploying current build with failures, click to see more detail"
+                if is_agent_failed(agent)
+                else f"{hostname}: Agent is deploying current build"
+            )
+
+    elif agent["deployStage"] == "SERVING_BUILD":
+        return f"{hostname}: Agent is serving older build and waiting for deploy"
     else:
-        if agent["deployStage"] == "SERVING_BUILD":
-            return "{}: Agent is serving older build and waiting for deploy".format(hostname)
+        if is_agent_failed(agent):
+            return f"{hostname}: Agent is on older build with failures, click to see more detail"
+
         else:
-            if is_agent_failed(agent):
-                return "{}: Agent is on older build with failures, click to see more detail".format(
-                    hostname)
-            else:
-                return "{}: Agent is on older build and waiting for deploy".format(hostname)
+            return f"{hostname}: Agent is on older build and waiting for deploy"
 
 
 @register.filter("agentButton")
 def agentButton(agentStats):
     agent = agentStats.agent
 
-    if agent['state'] == "PAUSED_BY_USER" or agent['state'] == "DELETE" \
-            or agent['state'] == "RESET":
+    if agent['state'] in ["PAUSED_BY_USER", "DELETE", "RESET"]:
         return 'btn-info'
 
     if is_agent_failed(agent) or agent['state'] == 'UNREACHABLE':
@@ -579,10 +569,7 @@ def agentButton(agentStats):
     if agent['deployStage'] == "SERVING_BUILD" and agentStats.isCurrent:
         return 'btn-default'
 
-    if agentStats.isCurrent:
-        return 'btn-primary'
-
-    return 'btn-warning'
+    return 'btn-primary' if agentStats.isCurrent else 'btn-warning'
 
 
 @register.filter("agentIcon")
@@ -611,15 +598,12 @@ def agentIcon(agentStats):
     if agent['deployStage'] == "SERVING_BUILD" and agentStats.isCurrent:
         return 'fa-check'
 
-    if agentStats.isCurrent:
-        return 'fa-spinner fa-spin'
-
-    return 'fa-clock-o'
+    return 'fa-spinner fa-spin' if agentStats.isCurrent else 'fa-clock-o'
 
 
 @register.filter("hostButton")
 def hostButton(host):
-    if host['state'] == 'PENDING_TERMINATE' or host['state'] == 'TERMINATING':
+    if host['state'] in ['PENDING_TERMINATE', 'TERMINATING']:
         return 'btn-warning'
 
     return 'btn-default'
@@ -640,12 +624,12 @@ def hostIcon(host):
 def hostTip(host):
     hostname = host['hostName']
     if host['state'] == 'PROVISIONED':
-        return '{}: Host is provisioning, click for more information'.format(hostname)
+        return f'{hostname}: Host is provisioning, click for more information'
 
     if host['state'] == 'ACTIVE':
-        return '{}: Host is active and running, click for more information'.format(hostname)
+        return f'{hostname}: Host is active and running, click for more information'
 
-    return '{}: Host is marked for termination, click for more information'.format(hostname)
+    return f'{hostname}: Host is marked for termination, click for more information'
 
 
 @register.filter("jenkinsButton")
@@ -656,10 +640,7 @@ def jenkinsButton(current_status):
     if current_status == 'SUCCESS':
         return 'btn-default'
 
-    if current_status == 'RUNNING':
-        return 'btn-primary'
-
-    return 'btn-warning'
+    return 'btn-primary' if current_status == 'RUNNING' else 'btn-warning'
 
 
 @register.filter("jenkinsIcon")
@@ -670,40 +651,37 @@ def jenkinsIcon(current_status):
     if current_status == 'RUNNING':
         return 'fa-spinner fa-spin'
 
-    if current_status == 'SUCCESS':
-        return 'fa-check'
-
-    return 'fa-clock-o'
+    return 'fa-check' if current_status == 'SUCCESS' else 'fa-clock-o'
 
 
 @register.filter("isInstalling")
 def isInstalling(agentStats):
     agent = agentStats.agent
-    if agent['state'] == "PAUSED_BY_USER" or agent['state'] == "PAUSED_BY_SYSTEM" or \
-            agent['state'] == "DELETE" or agent['state'] == "STOP":
+    if agent['state'] in [
+        "PAUSED_BY_USER",
+        "PAUSED_BY_SYSTEM",
+        "DELETE",
+        "STOP",
+    ]:
         return False
     return agent['deployStage'] != "SERVING_BUILD"
 
 
 @register.filter("canRollbackTo")
 def canRollbackTo(deploy):
-    if deploy['type'] == "RESTART" or deploy['type'] == "ROLLBACK":
+    if deploy['type'] in ["RESTART", "ROLLBACK"]:
         return False
-    return deploy['state'] == "SUCCEEDED" or deploy['state'] == "ABORTED"
+    return deploy['state'] in ["SUCCEEDED", "ABORTED"]
 
 
 @register.filter("needRollbackWarn")
 def needRollbackWarn(deploy):
-    if deploy['acceptanceStatus'] != "ACCEPTED":
-        return True
-    return False
+    return deploy['acceptanceStatus'] != "ACCEPTED"
 
 
 @register.filter("needConfigLoading")
 def needConfigLoading(asg_status):
-    if asg_status == "UNKNOWN":
-        return True
-    return False
+    return asg_status == "UNKNOWN"
 
 
 @register.filter("hasScalingActivities")
@@ -713,16 +691,14 @@ def hasScalingActivities(asg_status):
 
 @register.filter("hasPredStage")
 def hasPredStage(env_promote):
-    if not env_promote['predStage'] or env_promote['predStage'] == BUILD_STAGE:
-        return False
-    return True
+    return bool(
+        env_promote['predStage'] and env_promote['predStage'] != BUILD_STAGE
+    )
 
 
 @register.filter("canResume")
 def canResume(env):
-    if env['envState'] == "PAUSED":
-        return True
-    return False
+    return env['envState'] == "PAUSED"
 
 
 @register.filter("deployStageTip")
@@ -737,7 +713,7 @@ def agentStateTip(state):
 
 @register.filter("progressType")
 def progressType(deploy):
-    if deploy["state"] == "ABORTED" or deploy["state"] == "FAILING":
+    if deploy["state"] in ["ABORTED", "FAILING"]:
         return "progress-bar-danger"
     else:
         return "progress-bar-success"
@@ -753,9 +729,7 @@ def jenkinsProgressType(current_status):
 
 @register.filter("lineNumber")
 def lineNumber(value):
-    if not value:
-        return 1
-    return value.count('\n') + 1
+    return value.count('\n') + 1 if value else 1
 
 
 @register.filter("reportTotal")
@@ -769,10 +743,7 @@ def reportTotal(report):
 def atLeastOneAddOn(addOns):
     if addOns is None:
         return False
-    for addOn in addOns:
-        if addOn.state != ServiceAddOn.UNKNOWN:
-            return True
-    return False
+    return any(addOn.state != ServiceAddOn.UNKNOWN for addOn in addOns)
 
 @register.filter("logHealthMetricTitle")
 def logHealthMetricTitle(logHealthResult):
@@ -790,7 +761,7 @@ def logHealthMetricTitle(logHealthResult):
 
     if len(lognames) == 1:
         if lognames[0] == "*":
-            title = "Any logs" + title
+            title = f"Any logs{title}"
         else:
             title = ('Log named "%s"' % lognames[0]) + title
     else:
@@ -813,9 +784,10 @@ def logHealthMessage(logHealthResult):
 
     maxMinsAgoThreshold = logHealthResult.latestLogAgoMinsBeforeWarning
     if logHealthResult.state == LogHealthReport.STABLE:
-        return " Last log received about: %s minute(s) ago" % (logHealthResult.lastLogMinutesAgo)
+        return f" Last log received about: {logHealthResult.lastLogMinutesAgo} minute(s) ago"
+
     elif logHealthResult.state == LogHealthReport.WARNING:
-        return " No logs received in the last %s minute(s)" % (maxMinsAgoThreshold)
+        return f" No logs received in the last {maxMinsAgoThreshold} minute(s)"
     elif logHealthResult.state == LogHealthReport.ERROR:
         return logHealthResult.errorMsg
     return ""
@@ -865,18 +837,12 @@ def stageToString(value):
 
 @register.filter("actionTypeTitle")
 def actionTypeTitle(value):
-    if value == "GROW":
-        return "grow"
-    else:
-        return "shrink"
+    return "grow" if value == "GROW" else "shrink"
 
 
 @register.filter("actionTypeHead")
 def actionTypeHead(value):
-    if value == "GROW":
-        return "Alarm to scale up"
-    else:
-        return "Alarm to scale down"
+    return "Alarm to scale up" if value == "GROW" else "Alarm to scale down"
 
 
 @register.filter("itemToComparator")
@@ -893,30 +859,25 @@ def itemToComparator(value):
 
 @register.filter("genSubnetInfo")
 def genSubnetInfo(value):
-    return "{} | {} | {}".format(value.get("id"), value.get("info").get("tag"),
-                                 value.get("info").get("zone"))
+    return f'{value.get("id")} | {value.get("info").get("tag")} | {value.get("info").get("zone")}'
 
 
 @register.filter("genSubnetIdZone")
 def genSubnetIdZone(value):
-    return "{} | {}".format(value.get("id"), value.get("info").get("zone"))
+    return f'{value.get("id")} | {value.get("info").get("zone")}'
 
 
 @register.filter("genSubnetId")
 def genSubnetId(value):
-    return "{}|{}|{}".format(value.get("id"), value.get("info").get("tag"),
-                             value.get("info").get("zone"))
+    return f'{value.get("id")}|{value.get("info").get("tag")}|{value.get("info").get("zone")}'
 
 
 @register.filter("genImageInfo")
 def genImageInfo(value):
     temp_time = datetime.fromtimestamp(value.get("publish_date") / 1000,
                                        pytz.timezone('America/Los_Angeles'))
-    symbol = "X"
-    if value.get("qualified"):
-        symbol = "V"
-    return "{} | {} | {} | {}".format(value.get("abstract_name"), value.get("provider_name"),
-                                      temp_time.strftime("%Y-%m-%d %H:%M:%S"), symbol)
+    symbol = "V" if value.get("qualified") else "X"
+    return f'{value.get("abstract_name")} | {value.get("provider_name")} | {temp_time.strftime("%Y-%m-%d %H:%M:%S")} | {symbol}'
 
 
 @register.filter("healthCheckStatusClass")
@@ -973,26 +934,17 @@ def computeDeployLatencyForHealthCheck(check):
 
 @register.filter("truncateWord")
 def truncateWord(word):
-    if (len(word) > 7):
-        return word[:7]
-    else:
-        return word
+    return word[:7] if (len(word) > 7) else word
 
 
 @register.filter("basicIcon")
 def isBasic(basic):
-    if basic:
-        return "fa fa-pinterest color-red"
-    else:
-        return ""
+    return "fa fa-pinterest color-red" if basic else ""
 
 
 @register.filter("qualifiedIcon")
 def isQualified(qualified):
-    if qualified:
-        return "fa fa-check-circle color-green"
-    else:
-        return ""
+    return "fa fa-check-circle color-green" if qualified else ""
 
 
 @register.filter("isEnvEnabled")
@@ -1002,9 +954,7 @@ def isEnvEnabled(env):
 
 @register.filter("isDisabledEnvTag")
 def isDisabledEnvTag(env_tag):
-    if env_tag and env_tag.get('value') == "DISABLE_ENV":
-        return True
-    return False
+    return bool(env_tag and env_tag.get('value') == "DISABLE_ENV")
 
 
 @register.filter("availableBuildTag")
@@ -1027,9 +977,11 @@ def get_available_tag(tag):
 
 @register.filter("canReplaceCluster")
 def canReplaceCluster(cluster):
-    if cluster and cluster.get('state') and cluster.get('state') != 'NORMAL':
-        return False
-    return True
+    return (
+        not cluster
+        or not cluster.get('state')
+        or cluster.get('state') == 'NORMAL'
+    )
 
 @register.filter("getType")
 def get_type(object):
@@ -1038,19 +990,16 @@ def get_type(object):
 @register.filter("getValue")
 def get_value(dictionary, key):
     ''' return value from dict, OrderedDict, UserDict '''
-    if not isinstance(dictionary, Mapping):
-        return None
-    return dictionary.get(key, None)
+    return dictionary.get(key, None) if isinstance(dictionary, Mapping) else None
 
 @register.filter("convertConfigHistoryString")
 def convertConfigHistoryString(change):
     change = str(change)
     change = change.replace("false", "False")
     change = change.replace("true", "True")
-    if change[:1] == "{" or change[:1] == "[":
+    if change[:1] in ["{", "["]:
         try:
-            converted_string = ast.literal_eval(change)
-            return converted_string
+            return ast.literal_eval(change)
         except:
             pass
     return change

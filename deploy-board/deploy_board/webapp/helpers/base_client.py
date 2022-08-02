@@ -31,10 +31,10 @@ class BaseClient(object):
     def __call(self, method):
         @retry(requests.RequestException, tries=1, delay=1, backoff=1)
         def api(path, token=None, params=None, data=None):
-            url = '%s/%s%s' % (self.url_prefix, self.url_version, path)
+            url = f'{self.url_prefix}/{self.url_version}{path}'
             headers = {'Content-type': 'application/json'}
             if token:
-                headers['Authorization'] = 'token %s' % token
+                headers['Authorization'] = f'token {token}'
 
             response = getattr(requests, method)(url, headers=headers, params=params, json=data,
                                                  timeout=DEFAULT_TIMEOUT, verify=False)
@@ -58,19 +58,16 @@ class BaseClient(object):
                     "assistance. " + response.content)
 
             if response.status_code == 404:
-                log.info("Resource %s Not found" % path)
+                log.info(f"Resource {path} Not found")
                 return None
 
             if 400 <= response.status_code < 600:
-                log.error("Backend return error %s" % response.content)
+                log.error(f"Backend return error {response.content}")
                 raise TeletraanException(
                     "Teletraan failed to call backend server."
                     "Hint: %s, %s" % (response.status_code, response.content))
 
-            if response.content:
-                return response.json()
-
-            return None
+            return response.json() if response.content else None
 
         return api
 
@@ -87,8 +84,4 @@ class BaseClient(object):
         return self.__call('delete')(path, token, params=params, data=data)
 
     def gen_params(self, kwargs):
-        params = {}
-        for key, value in kwargs.iteritems():
-            if value:
-                params[key] = value
-        return params
+        return {key: value for key, value in kwargs.iteritems() if value}

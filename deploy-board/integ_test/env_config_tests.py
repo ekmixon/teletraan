@@ -29,12 +29,14 @@ class TestEnvirons(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.envName = "test-config-" + commons.gen_random_num()
+        cls.envName = f"test-config-{commons.gen_random_num()}"
         cls.stageName = "prod"
-        data = {}
-        data["description"] = "foo's \"big deal\"."
-        data["envName"] = cls.envName
-        data["stageName"] = cls.stageName
+        data = {
+            "description": """foo's \"big deal\".""",
+            "envName": cls.envName,
+            "stageName": cls.stageName,
+        }
+
         environs_helper.create_env(commons.REQUEST, data)
 
     @classmethod
@@ -138,10 +140,12 @@ class TestEnvirons(unittest.TestCase):
                                                           TestEnvirons.stageName)
         self.assertTrue(len(oldAlarms) == 0)
 
-        newAlarm = {}
-        newAlarm['name'] = "alarm1"
-        newAlarm['alarmUrl'] = "www1.pinterest1.com"
-        newAlarm['metricsUrl'] = "www2.pinterest1.com"
+        newAlarm = {
+            'name': "alarm1",
+            'alarmUrl': "www1.pinterest1.com",
+            'metricsUrl': "www2.pinterest1.com",
+        }
+
         alarms = [newAlarm]
         environs_helper.update_env_alarms_config(commons.REQUEST, TestEnvirons.envName,
                                                  TestEnvirons.stageName, alarms)
@@ -149,10 +153,12 @@ class TestEnvirons(unittest.TestCase):
                                                           TestEnvirons.stageName)
         self.assertEquals(alarms, newAlarms)
 
-        newAlarm = {}
-        newAlarm['name'] = "alarm2"
-        newAlarm['alarmUrl'] = "www2.pinterest1.com"
-        newAlarm['metricsUrl'] = "www2.pinterest1.com"
+        newAlarm = {
+            'name': "alarm2",
+            'alarmUrl': "www2.pinterest1.com",
+            'metricsUrl': "www2.pinterest1.com",
+        }
+
         alarms.append(newAlarm)
         environs_helper.update_env_alarms_config(commons.REQUEST, TestEnvirons.envName,
                                                  TestEnvirons.stageName, alarms)
@@ -165,26 +171,20 @@ class TestEnvirons(unittest.TestCase):
                                                             TestEnvirons.stageName)
         self.assertTrue(len(oldMetrics) == 0)
 
-        metrics = []
-        metConfig = {}
-        metSpec = {}
-        metSpecs = []
-
-        metSpec["color"] = "blue"
-        metSpec["min"] = 0
-        metSpec["max"] = 98
-        metSpecs.append(metSpec)
-
+        metSpec = {"color": "blue", "min": 0, "max": 98}
+        metSpecs = [metSpec]
         metSpec["color"] = "green"
         metSpec["min"] = 99
         metSpec["max"] = 100
         metSpecs.append(metSpec)
 
-        metConfig["title"] = "TestTitle"
-        metConfig["url"] = "www.pinterest.com"
-        metConfig["specs"] = metSpecs
-        metrics.append(metConfig)
+        metConfig = {
+            "title": "TestTitle",
+            "url": "www.pinterest.com",
+            "specs": metSpecs,
+        }
 
+        metrics = [metConfig]
         environs_helper.update_env_metrics_config(commons.REQUEST, TestEnvirons.envName,
                                                   TestEnvirons.stageName, metrics)
         newMetrics = environs_helper.get_env_metrics_config(commons.REQUEST, TestEnvirons.envName,
@@ -212,27 +212,28 @@ class TestEnvirons(unittest.TestCase):
                                                         TestEnvirons.stageName)
         self.assertTrue(oldHooks["preDeployHooks"] is None)
 
-        newHook = {}
-        hooks = {}
-        newHook['method'] = "GET"
-        newHook['url'] = "www1.pinterest1.com"
-        newHook['version'] = "HTTP/1.1"
-        newHook['headers'] = None
-        newHook['body'] = None
-        hooks["preDeployHooks"] = [newHook]
-        hooks["postDeployHooks"] = [newHook]
+        newHook = {
+            'method': "GET",
+            'url': "www1.pinterest1.com",
+            'version': "HTTP/1.1",
+            'headers': None,
+            'body': None,
+        }
+
+        hooks = {"preDeployHooks": [newHook], "postDeployHooks": [newHook]}
         environs_helper.update_env_hooks_config(commons.REQUEST, TestEnvirons.envName,
                                                 TestEnvirons.stageName, hooks)
         newHooks = environs_helper.get_env_hooks_config(commons.REQUEST, TestEnvirons.envName,
                                                         TestEnvirons.stageName)
         self.assertEquals(hooks, newHooks)
 
-        newHook = {}
-        newHook['method'] = "POST"
-        newHook['url'] = "www1.pinterest1.com"
-        newHook['version'] = None
-        newHook['headers'] = None
-        newHook['body'] = None
+        newHook = {
+            'method': "POST",
+            'url': "www1.pinterest1.com",
+            'version': None,
+            'headers': None,
+            'body': None,
+        }
 
         newHooks2 = [newHook]
         newHook['method'] = "POST"
@@ -250,24 +251,27 @@ class TestEnvirons(unittest.TestCase):
         self.assertEquals(hooks, newHooks)
 
     def testScheduleConfigs(self):
-        schedule = {}
-        schedule["cooldownTimes"] = "20,30,40"
-        schedule["hostNumbers"] = "30,50,70"
-        schedule["totalSessions"] = 3
+        schedule = {
+            "cooldownTimes": "20,30,40",
+            "hostNumbers": "30,50,70",
+            "totalSessions": 3,
+        }
+
         schedules_helper.update_schedule(commons.REQUEST, TestEnvirons.envName, TestEnvirons.stageName, schedule)
 
         scheduleId = environs_helper.get_env_by_stage(commons.REQUEST, TestEnvirons.envName,
                                                         TestEnvirons.stageName)['scheduleId']
         envSchedule = schedules_helper.get_schedule(commons.REQUEST, TestEnvirons.envName, TestEnvirons.stageName, scheduleId)
 
-        newSchedule = {}
-        newSchedule[u'cooldownTimes'] = u'20,30,40'
-        newSchedule[u'hostNumbers'] = u'30,50,70'
-        newSchedule[u'totalSessions'] = 3
-        newSchedule[u'state'] = u'NOT_STARTED'
-        newSchedule[u'id'] = scheduleId
-        newSchedule[u'currentSession'] = 0
-        newSchedule[u'stateStartTime'] = envSchedule[u'stateStartTime']
+        newSchedule = {
+            'cooldownTimes': '20,30,40',
+            'hostNumbers': '30,50,70',
+            'totalSessions': 3,
+            'state': 'NOT_STARTED',
+            'id': scheduleId,
+            'currentSession': 0,
+            'stateStartTime': envSchedule[u'stateStartTime'],
+        }
 
         self.assertEquals(newSchedule, envSchedule)
 

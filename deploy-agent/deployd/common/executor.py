@@ -46,10 +46,9 @@ class Executor(object):
         self.BACK_OFF = config.get_backoff_factor()
         self.MAX_SLEEP_INTERVAL = config.get_subprocess_max_sleep_interval()
         self._config = config
-        log.debug('Executor configs have been updated: '
-                  'PING_INTERVAL={}, TIME_OUT={}, MAX_RETRY={}'.format(self.MIN_RUNNING_TIME,
-                                                                      self.MAX_RUNNING_TIME,
-                                                                      self.MAX_RETRY))
+        log.debug(
+            f'Executor configs have been updated: PING_INTERVAL={self.MIN_RUNNING_TIME}, TIME_OUT={self.MAX_RUNNING_TIME}, MAX_RETRY={self.MAX_RETRY}'
+        )
 
     def get_subprocess_output(self, fd, file_pos):
         curr_pos = fd.tell()
@@ -62,7 +61,7 @@ class Executor(object):
         if not isinstance(cmd, list):
             cmd = cmd.split(' ')
         cmd_str = ' '.join(cmd)
-        log.info('Running: {} with {} retries.'.format(cmd_str, self.MAX_RETRY))
+        log.info(f'Running: {cmd_str} with {self.MAX_RETRY} retries.')
 
         deploy_report = DeployReport(status_code=AgentStatus.UNKNOWN,
                                      error_code=0,
@@ -81,7 +80,7 @@ class Executor(object):
                                                preexec_fn=os.setsid, **kw)
                     while process.poll() is None:
                         start, deploy_report = \
-                            self.ping_server_if_possible(start, cmd, deploy_report)
+                                self.ping_server_if_possible(start, cmd, deploy_report)
                         """
                         terminate case 1:
                         the server changed the deploy goal, notify process and wait for it to shut down
@@ -100,8 +99,8 @@ class Executor(object):
                             # the best way to get output is to tail the log
                             deploy_report.output_msg = self.get_subprocess_output(fd=fdout,
                                                                                   file_pos=file_pos)
-                            log.info("Exceed max running time: {}.".format(self.MAX_RUNNING_TIME))
-                            log.info("Output from subprocess: {}".format(deploy_report.output_msg))
+                            log.info(f"Exceed max running time: {self.MAX_RUNNING_TIME}.")
+                            log.info(f"Output from subprocess: {deploy_report.output_msg}")
                             deploy_report.status_code = AgentStatus.SCRIPT_TIMEOUT
                             deploy_report.error_code = 1
                             return deploy_report
@@ -115,7 +114,7 @@ class Executor(object):
                     deploy_report.output_msg = self.get_subprocess_output(fd=fdout,
                                                                           file_pos=file_pos)
                     if process.returncode == 0:
-                        log.info('Running: {} succeeded.'.format(cmd_str))
+                        log.info(f'Running: {cmd_str} succeeded.')
                         deploy_report.status_code = AgentStatus.SUCCEEDED
                         return deploy_report
                 except Exception:
@@ -141,9 +140,10 @@ class Executor(object):
 
                 init_start = datetime.datetime.now()  # reset the initial start time
 
-                log.info('Failed: {}, at {} retry. Error:\n{}'.format(cmd_str,
-                                                                      deploy_report.retry_times,
-                                                                      deploy_report.output_msg))
+                log.info(
+                    f'Failed: {cmd_str}, at {deploy_report.retry_times} retry. Error:\n{deploy_report.output_msg}'
+                )
+
                 sleep_time = self._get_sleep_interval(start, process_interval)
                 time.sleep(sleep_time)
                 start, deploy_report = self.ping_server_if_possible(start, cmd, deploy_report)
@@ -162,16 +162,20 @@ class Executor(object):
     def ping_server_if_possible(self, start, cmd_str, deploy_report):
         now = datetime.datetime.now()
         processed_time = (now - start).seconds
-        log.debug("start: {}, now: {}, process: {}".format(start, now, processed_time))
+        log.debug(f"start: {start}, now: {now}, process: {processed_time}")
         if processed_time >= self.MIN_RUNNING_TIME and self._ping_server:
             start = now
-            log.info('Exceed min running time: {}, '
-                     'reporting to the server'.format(self.MIN_RUNNING_TIME))
+            log.info(
+                f'Exceed min running time: {self.MIN_RUNNING_TIME}, reporting to the server'
+            )
+
             result = self._ping_server(deploy_report)
             if result == PingStatus.PLAN_CHANGED:
                 deploy_report.status_code = AgentStatus.ABORTED_BY_SERVER
-                log.info('Deploy goal has changed, '
-                         'aborting the current command {}.'.format(' '.join(cmd_str)))
+                log.info(
+                    f"Deploy goal has changed, aborting the current command {' '.join(cmd_str)}."
+                )
+
 
         return start, deploy_report
 
@@ -186,11 +190,14 @@ class Executor(object):
             log.info('Kill currently running process')
             os.killpg(process.pid, signal.SIGKILL)
         except Exception as e:
-            log.debug('Failed to kill process: {}'.format(e))
+            log.debug(f'Failed to kill process: {e}')
 
     def _graceful_shutdown(self, process):
         try:
-            log.info('Gracefully shutdown currently running process with timeout {}'.format(self.TERMINATE_TIMEOUT))
+            log.info(
+                f'Gracefully shutdown currently running process with timeout {self.TERMINATE_TIMEOUT}'
+            )
+
             os.killpg(process.pid, signal.SIGTERM)
             # can switch to process.wait(timeout) once on Py3
             start_time = datetime.datetime.now()
@@ -199,7 +206,7 @@ class Executor(object):
                     raise Exception('Timed out while waiting for the process to shutdown')
                 time.sleep(min(self.PROCESS_POLL_INTERVAL, self.TERMINATE_TIMEOUT))
         except Exception as e:
-            log.debug('Failed to gracefully shutdown: {}'.format(e))
+            log.debug(f'Failed to gracefully shutdown: {e}')
             Executor._kill_process(process)
 
     def execute_command(self, script):
@@ -210,8 +217,8 @@ class Executor(object):
                 means it's a newly added host (never deployed before). Show a warning message
                 and exit. Otherwise, we treat it as an agent failure (nothing to execute)
                 """
-                error_msg = "teletraan directory cannot be found " \
-                            "in the tar ball in step {}!".format(deploy_step)
+                error_msg = f"teletraan directory cannot be found in the tar ball in step {deploy_step}!"
+
                 if deploy_step in PRE_STAGE_STEPS:
                     log.warning(error_msg)
                     return DeployReport(status_code=AgentStatus.SUCCEEDED)
@@ -229,7 +236,7 @@ class Executor(object):
                     return DeployReport(status_code=AgentStatus.AGENT_FAILED, error_code=1,
                                         retry_times=1, output_msg=error_msg)
                 else:
-                    log.info('script: {} does not exist.'.format(script))
+                    log.info(f'script: {script} does not exist.')
                     return DeployReport(status_code=AgentStatus.SUCCEEDED)
 
             os.chdir(self._config.get_script_directory())
@@ -239,7 +246,7 @@ class Executor(object):
             return self.run_cmd(script)
         except Exception as e:
             error_msg = str(e)
-            log.error('Failed to execute command: {}. Reason: {}'.format(script, error_msg))
+            log.error(f'Failed to execute command: {script}. Reason: {error_msg}')
             log.error(traceback.format_exc())
             return DeployReport(status_code=AgentStatus.AGENT_FAILED,
                                 error_code=1,

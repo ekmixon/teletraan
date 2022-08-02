@@ -30,7 +30,7 @@ class DelegatedOAuthMiddleware(object):
         if settings.OAUTH_ENABLED:
             self.is_oauth_enabled = True
 
-            logger.info("clientid = %s" % settings.OAUTH_CLIENT_ID)
+            logger.info(f"clientid = {settings.OAUTH_CLIENT_ID}")
             self.oauth = OAuth(
                 key=settings.OAUTH_CLIENT_ID,
                 secret=settings.OAUTH_CLIENT_SECRET,
@@ -47,11 +47,11 @@ class DelegatedOAuthMiddleware(object):
 
     def process_request(self, request):
         if request.path.startswith('/auth/'):
-            logger.debug("Bypass OAuth redirect request " + request.path)
+            logger.debug(f"Bypass OAuth redirect request {request.path}")
             return None
 
         if request.path.startswith('/health_check/'):
-            logger.debug("Bypass health_check request " + request.path)
+            logger.debug(f"Bypass health_check request {request.path}")
             return None
 
         if not self.is_oauth_enabled:
@@ -71,7 +71,7 @@ class DelegatedOAuthMiddleware(object):
             # self.logout(request)
             data = {'origin_path': request.get_full_path()}
             url = self.oauth.get_authorization_url(session=request.session, data=data)
-            logger.debug("Redirect oauth for authentication!, url = " + url)
+            logger.debug(f"Redirect oauth for authentication!, url = {url}")
             return HttpResponseRedirect(url)
 
 
@@ -141,7 +141,7 @@ def login_authorized(request):
         oauth.oauth_handler.token_remove(session=request.session)
         return HttpResponseRedirect("/")
 
-    logger.debug("get user_name %s and data %s back from oauth!" % (user_name, data))
+    logger.debug(f"get user_name {user_name} and data {data} back from oauth!")
     request.session['teletraan_user'] = user_name
 
     if data and 'origin_path' in data:
@@ -150,7 +150,7 @@ def login_authorized(request):
     return HttpResponseRedirect('/')
 
 def logout(request):
-    logger.debug("Logout %s!" % request.session.get("teletraan_user", "anonymous"))
+    logger.debug(f'Logout {request.session.get("teletraan_user", "anonymous")}!')
     if not settings.OAUTH_ENABLED:
         logger.error("OAuth is not enabled!")
         return HttpResponseRedirect('/')

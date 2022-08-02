@@ -21,7 +21,7 @@ deployclient = DeployClient()
 
 
 def get(request, id):
-    return deployclient.get("/hotfixs/%s" % id, request.teletraan_user_id.token)
+    return deployclient.get(f"/hotfixs/{id}", request.teletraan_user_id.token)
 
 
 def get_all(request, envName, index=1, size=30):
@@ -35,4 +35,6 @@ def create(request, envName, baseDeployId, commits):
 
 
 def is_user_eligible(request, user_name):
-    return deployclient.get("/ratings/%s/is_eligible" % user_name, request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/ratings/{user_name}/is_eligible", request.teletraan_user_id.token
+    )

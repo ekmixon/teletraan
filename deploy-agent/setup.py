@@ -36,7 +36,7 @@ install_requires = [
 setup(
     name='deploy-agent',
     version=__version__,
-    scripts=['bin/{}'.format(p) for p in os.listdir('bin')],
+    scripts=[f'bin/{p}' for p in os.listdir('bin')],
     long_description=markdown_contents,
     entry_points={
         'console_scripts': console_scripts,
@@ -52,5 +52,5 @@ setup(
         'deployd.types',
     ],
     include_package_data=True,
-    package_data={'deployd/conf': ['*.conf']}
+    package_data={'deployd/conf': ['*.conf']},
 )

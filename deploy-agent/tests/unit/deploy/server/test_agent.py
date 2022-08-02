@@ -43,67 +43,69 @@ class TestDeployAgent(tests.TestCase):
         ensure_dirs(cls.config)
         cls.executor = mock.Mock()
         cls.executor.execute_command = \
-            mock.Mock(return_value=(DeployReport(AgentStatus.SUCCEEDED)))
+                mock.Mock(return_value=(DeployReport(AgentStatus.SUCCEEDED)))
         cls.executor.run_cmd = mock.Mock(return_value=(DeployReport(AgentStatus.SUCCEEDED)))
         cls.helper = mock.Mock()
         cls.helper.get_stale_builds = mock.Mock(return_value=[])
 
-        build = {}
-        build['id'] = '123'
-        build['name'] = 'abc'
-        build['commitShort'] = '345'
-        build['artifactUrl'] = 'https://test'
+        build = {
+            'id': '123',
+            'name': 'abc',
+            'commitShort': '345',
+            'artifactUrl': 'https://test',
+        }
 
-        envvar = {}
-        envvar['id'] = 'abc'
-        envvar['url'] = 'https://test'
+        envvar = {'id': 'abc', 'url': 'https://test'}
+        cls.deploy_goal1 = {
+            'deployId': '123',
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployStage': DeployStage.PRE_DOWNLOAD,
+            'scriptVariables': envvar,
+        }
 
-        cls.deploy_goal1 = {}
-        cls.deploy_goal1['deployId'] = '123'
-        cls.deploy_goal1['envName'] = 'abc'
-        cls.deploy_goal1['envId'] = 'def'
-        cls.deploy_goal1['stageName'] = 'beta'
-        cls.deploy_goal1['deployStage'] = DeployStage.PRE_DOWNLOAD
-        cls.deploy_goal1['scriptVariables'] = envvar
+        cls.deploy_goal2 = {
+            'deployId': '123',
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployStage': DeployStage.DOWNLOADING,
+            'build': build,
+        }
 
-        cls.deploy_goal2 = {}
-        cls.deploy_goal2['deployId'] = '123'
-        cls.deploy_goal2['envName'] = 'abc'
-        cls.deploy_goal2['envId'] = 'def'
-        cls.deploy_goal2['stageName'] = 'beta'
-        cls.deploy_goal2['deployStage'] = DeployStage.DOWNLOADING
-        cls.deploy_goal2['build'] = build
+        cls.deploy_goal3 = {
+            'deployId': '123',
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployStage': DeployStage.STAGING,
+        }
 
-        cls.deploy_goal3 = {}
-        cls.deploy_goal3['deployId'] = '123'
-        cls.deploy_goal3['envName'] = 'abc'
-        cls.deploy_goal3['envId'] = 'def'
-        cls.deploy_goal3['stageName'] = 'beta'
-        cls.deploy_goal3['deployStage'] = DeployStage.STAGING
+        cls.deploy_goal4 = {
+            'deployId': '123',
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployStage': DeployStage.PRE_RESTART,
+        }
 
-        cls.deploy_goal4 = {}
-        cls.deploy_goal4['deployId'] = '123'
-        cls.deploy_goal4['envName'] = 'abc'
-        cls.deploy_goal4['envId'] = 'def'
-        cls.deploy_goal4['stageName'] = 'beta'
-        cls.deploy_goal4['deployStage'] = DeployStage.PRE_RESTART
+        cls.deploy_goal5 = {
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployId': '234',
+            'deployStage': DeployStage.PRE_DOWNLOAD,
+            'build': build,
+        }
 
-        cls.deploy_goal5 = {}
-        cls.deploy_goal5['deployId'] = '123'
-        cls.deploy_goal5['envName'] = 'abc'
-        cls.deploy_goal5['envId'] = 'def'
-        cls.deploy_goal5['stageName'] = 'beta'
-        cls.deploy_goal5['deployId'] = '234'
-        cls.deploy_goal5['deployStage'] = DeployStage.PRE_DOWNLOAD
-        cls.deploy_goal5['build'] = build
-
-        cls.deploy_goal6 = {}
-        cls.deploy_goal6['deployId'] = '123'
-        cls.deploy_goal6['envName'] = 'abc'
-        cls.deploy_goal6['envId'] = 'def'
-        cls.deploy_goal6['stageName'] = 'beta'
-        cls.deploy_goal6['deployId'] = '234'
-        cls.deploy_goal6['deployStage'] = DeployStage.SERVING_BUILD
+        cls.deploy_goal6 = {
+            'envName': 'abc',
+            'envId': 'def',
+            'stageName': 'beta',
+            'deployId': '234',
+            'deployStage': DeployStage.SERVING_BUILD,
+        }
 
         cls.ping_response1 = {'deployGoal': cls.deploy_goal1, 'opCode': OpCode.DEPLOY}
         cls.ping_response2 = {'deployGoal': cls.deploy_goal2, 'opCode': OpCode.DEPLOY}

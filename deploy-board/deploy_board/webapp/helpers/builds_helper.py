@@ -21,11 +21,13 @@ deploy_client = DeployClient()
 
 
 def get_build(request, id):
-    return deploy_client.get("/builds/%s" % id, request.teletraan_user_id.token)
+    return deploy_client.get(f"/builds/{id}", request.teletraan_user_id.token)
 
 
 def get_branches(request, name):
-    return deploy_client.get("/builds/names/%s/branches" % name, request.teletraan_user_id.token)
+    return deploy_client.get(
+        f"/builds/names/{name}/branches", request.teletraan_user_id.token
+    )
 
 
 def get_builds(request, **kwargs):
@@ -43,7 +45,7 @@ def get_build_names(request, **kwargs):
 
 
 def delete_build(request, id):
-    return deploy_client.delete("/builds/%s" % id, request.teletraan_user_id.token)
+    return deploy_client.delete(f"/builds/{id}", request.teletraan_user_id.token)
 
 
 def get_commits(request, **kwargs):
@@ -52,7 +54,9 @@ def get_commits(request, **kwargs):
 
 
 def get_commit(request, repo, sha):
-    return deploy_client.get("/commits/%s/%s" % (repo, sha), request.teletraan_user_id.token)
+    return deploy_client.get(
+        f"/commits/{repo}/{sha}", request.teletraan_user_id.token
+    )
 
 def get_builds_and_tags(request, **kwargs):
     params = deploy_client.gen_params(kwargs)

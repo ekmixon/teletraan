@@ -51,8 +51,10 @@ def get_all_stages(envs, stage):
 
 
 def is_agent_failed(agent):
-    return (agent['status'] != "SUCCEEDED" and agent['status'] != "UNKNOWN") \
+    return (
+        agent['status'] not in ["SUCCEEDED", "UNKNOWN"]
         or agent['state'] == "PAUSED_BY_SYSTEM"
+    )
 
 
 # Return the last completed deploy
@@ -60,12 +62,13 @@ def get_last_completed_deploy(request, env):
     # the first one is the current deploy
     result = deploys_helper.get_all(request, envId=[env['id']], pageIndex=1, pageSize=2)
     deploys = result.get("deploys")
-    if not deploys or len(deploys) < 2:
-        logging.info("Could not find last completed deploy in env %s/%s" % (env['envName'],
-                                                                            env['stageName']))
-        return None
-    else:
+    if deploys and len(deploys) >= 2:
         return deploys[1]
+    logging.info(
+        f"Could not find last completed deploy in env {env['envName']}/{env['stageName']}"
+    )
+
+    return None
 
 
 # Return the last completed deploy
@@ -73,11 +76,10 @@ def get_previous_deploy(request, env, deploy):
     result = deploys_helper.get_all(request, envId=[env['id']], before=deploy['startDate'],
                                     pageIndex=1, pageSize=2)
     deploys = result.get("deploys")
-    if not deploys or len(deploys) < 2:
-        logging.info("Could not find a deploy before deploy %s" % deploy['id'])
-        return None
-    else:
+    if deploys and len(deploys) >= 2:
         return deploys[1]
+    logging.info(f"Could not find a deploy before deploy {deploy['id']}")
+    return None
 
 
 # Return all the commits, up to allowed size, also a
@@ -107,8 +109,10 @@ def get_commits_between(request, repo, startSha, endSha, max=500):
 
     while True:
         if len(total_commits) >= max:
-            logging.error("Exceeded max allowed commits, repo=%s, startSha=%s, endSha=%s" % (
-                repo, startSha, endSha))
+            logging.error(
+                f"Exceeded max allowed commits, repo={repo}, startSha={startSha}, endSha={endSha}"
+            )
+
             break
 
         commits, truncated, new_start_sha = get_commits_batch(request, repo,
@@ -136,14 +140,20 @@ def restart(request, name, stage):
 def rollback_to(request, name, stage, deploy_id):
     query_dict = request.POST
     desc = query_dict.get('description', None)
-    mark_build_as_bad = True if query_dict.get('mark_build_as_bad', 'on') == 'on' else False
+    mark_build_as_bad = query_dict.get('mark_build_as_bad', 'on') == 'on'
     buildId = query_dict.get('toBeMarkedBuildId', None)
     if mark_build_as_bad and buildId:
-        tag = {"targetId": buildId,
-               "targetType": "Build",
-               "value": tags_helper.TagValue.BAD_BUILD,
-               "comments": "deploy rollback, mark build as bad." + desc}
-        logger.info("env {} stage {} rollback, mark buildId {} as {}".format(name, stage, buildId, tag))
+        tag = {
+            "targetId": buildId,
+            "targetType": "Build",
+            "value": tags_helper.TagValue.BAD_BUILD,
+            "comments": f"deploy rollback, mark build as bad.{desc}",
+        }
+
+        logger.info(
+            f"env {name} stage {stage} rollback, mark buildId {buildId} as {tag}"
+        )
+
         builds_helper.set_build_tag(request, tag)
     return deploys_helper.rollback(request, name, stage, deploy_id, description=desc)
 

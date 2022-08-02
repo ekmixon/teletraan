@@ -52,7 +52,7 @@ def get_random_string(length=12,
 
     Warning: Should only be used with systemrandom. PRNG is predictable
     """
-    return ''.join(random.choice(allowed_chars) for i in range(length))
+    return ''.join(random.choice(allowed_chars) for _ in range(length))
 
 
 def is_equal(a, b):
@@ -111,8 +111,7 @@ class SessionOauthHandler(OAuthHandler):
         self.expires_name = expires_name
 
     def state_getter(self, session, **kwargs):
-        state = session.get(self.state_name)
-        return state
+        return session.get(self.state_name)
 
     def state_setter(self, value, session, **kwargs):
         session[self.state_name] = value
@@ -151,21 +150,19 @@ class OAuth(object):
             authorize_url=OAUTH_AUTHORIZE_URL,
             oauth_handler=SessionOauthHandler(),
             scope=DEFAULT_SCOPE):
-        self.access_token_url = access_token_url if access_token_url else OAUTH_ACCESS_TOKEN_URL
+        self.access_token_url = access_token_url or OAUTH_ACCESS_TOKEN_URL
         self.secret = secret
         self.key = key
-        self.authorize_url = authorize_url if authorize_url else OAUTH_AUTHORIZE_URL
+        self.authorize_url = authorize_url or OAUTH_AUTHORIZE_URL
         self.callback_url = callback_url
         self.oauth_handler = oauth_handler
-        self.scope = scope if scope else DEFAULT_SCOPE
+        self.scope = scope or DEFAULT_SCOPE
         self.domain = domain
 
     def get_client(self, token=None):
         if token and isinstance(token, (tuple, list)):
             token = {'access_token': token[0]}
-        client = oauthlib.oauth2.WebApplicationClient(
-            self.key, token=token)
-        return client
+        return oauthlib.oauth2.WebApplicationClient(self.key, token=token)
 
     def validate_token(self, **kwargs):
         token, expires = self.oauth_handler.token_getter(**kwargs)
@@ -182,8 +179,7 @@ class OAuth(object):
             uri, data=unicode(body) if body else None, method=method, headers=headers
         )
 
-        resp_data = json.loads(content)
-        return resp_data
+        return json.loads(content)
 
     def handle_oauth2_response(self, code, state_with_data, **kwargs):
         old_state = self.oauth_handler.state_getter(**kwargs)

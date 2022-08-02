@@ -109,7 +109,7 @@ class DeployAgent(object):
                     deploy_report = DeployReport(AgentStatus.SUCCEEDED)
 
                 if deploy_report.status_code == AgentStatus.ABORTED_BY_SERVER:
-                    log.info('switch to the new deploy goal: {}'.format(self._response.deployGoal))
+                    log.info(f'switch to the new deploy goal: {self._response.deployGoal}')
                     continue
 
             except Exception:
@@ -124,8 +124,10 @@ class DeployAgent(object):
             if deploy_report.status_code in [AgentStatus.AGENT_FAILED,
                                              AgentStatus.TOO_MANY_RETRY,
                                              AgentStatus.SCRIPT_TIMEOUT]:
-                log.error('Unexpeted exceptions: {}, error message {}'.format(
-                    deploy_report.status_code, deploy_report.output_msg))
+                log.error(
+                    f'Unexpeted exceptions: {deploy_report.status_code}, error message {deploy_report.output_msg}'
+                )
+
                 return
 
         self.clean_stale_builds()
@@ -133,7 +135,7 @@ class DeployAgent(object):
             self._update_internal_deploy_goal(self._response)
 
         if self._response:
-            log.info('Complete the current deploy with response: {}.'.format(self._response))
+            log.info(f'Complete the current deploy with response: {self._response}.')
         else:
             log.info('Failed to get response from server, exit.')
 
@@ -143,7 +145,7 @@ class DeployAgent(object):
             try:
                 self.serve_build()
             except:
-                log.exception("Deploy Agent got exception: {}".format(traceback.format_exc()))
+                log.exception(f"Deploy Agent got exception: {traceback.format_exc()}")
             finally:
                 time.sleep(self._config.get_daemon_sleep_time())
                 self.load_status_file()
@@ -155,35 +157,37 @@ class DeployAgent(object):
             if len(self._envs) > 0:
                 # randomly sleep some time before pinging server
                 sleep_secs = randrange(self._config.get_init_sleep_time())
-                log.info("Randomly sleep {} seconds before starting.".format(sleep_secs))
+                log.info(f"Randomly sleep {sleep_secs} seconds before starting.")
                 time.sleep(sleep_secs)
             else:
                 log.info("No status file. Could be first time agent ran")
             self.serve_build()
         except Exception:
-            log.exception("Deploy Agent got exceptions: {}".format(traceback.format_exc()))
+            log.exception(f"Deploy Agent got exceptions: {traceback.format_exc()}")
 
     def _resolve_deleted_env_name(self, envName, envId):
         # When server return DELETE goal, the envName might be empty if the env has already been
         # deleted. This function would try to figure out the envName based on the envId in the
         # DELETE goal.
-        if envName:
-            return envName
-        for name, value in self._envs.items():
-            if envId == value.report.envId:
-                return name
-        return None
+        return envName or next(
+            (
+                name
+                for name, value in self._envs.items()
+                if envId == value.report.envId
+            ),
+            None,
+        )
 
 
     def process_deploy(self, response):
         op_code = response.opCode
         deploy_goal = response.deployGoal
-        if op_code == OpCode.TERMINATE or op_code == OpCode.DELETE:
+        if op_code in [OpCode.TERMINATE, OpCode.DELETE]:
             envName = self._resolve_deleted_env_name(deploy_goal.envName, deploy_goal.envId)
             if envName in self._envs:
                 del self._envs[envName]
             else:
-                log.info('Cannot find env {} in the ping report'.format(envName))
+                log.info(f'Cannot find env {envName} in the ping report')
 
             if self._curr_report.report.envName == deploy_goal.envName:
                 self._curr_report = None
@@ -200,7 +204,7 @@ class DeployAgent(object):
             if curr_stage == DeployStage.DOWNLOADING:
                 return self._executor.run_cmd(self.get_download_script(deploy_goal=deploy_goal))
             elif curr_stage == DeployStage.STAGING:
-                log.info("set up symbolink for the package: {}".format(deploy_goal.deployId))
+                log.info(f"set up symbolink for the package: {deploy_goal.deployId}")
                 return self._executor.run_cmd(self.get_staging_script())
             else:
                 return self._executor.execute_command(curr_stage)
@@ -213,20 +217,48 @@ class DeployAgent(object):
         url = deploy_goal.build.artifactUrl
         build = deploy_goal.build.buildId
         env_name = self._curr_report.report.envName
-        if not self._config.get_config_filename():
-            return ['deploy-downloader', '-v', build, '-u', url, "-e", env_name]
-        else:
-            return ['deploy-downloader', '-f', self._config.get_config_filename(),
-                    '-v', build, '-u', url, "-e", env_name]
+        return (
+            [
+                'deploy-downloader',
+                '-f',
+                self._config.get_config_filename(),
+                '-v',
+                build,
+                '-u',
+                url,
+                "-e",
+                env_name,
+            ]
+            if self._config.get_config_filename()
+            else ['deploy-downloader', '-v', build, '-u', url, "-e", env_name]
+        )
 
     def get_staging_script(self):
         build = self._curr_report.build_info.build_id
         env_name = self._curr_report.report.envName
-        if not self._config.get_config_filename():
-            return ['deploy-stager', '-v', build, '-t', self._config.get_target(), "-e", env_name]
-        else:
-            return ['deploy-stager', '-f', self._config.get_config_filename(),
-                    '-v', build, '-t', self._config.get_target(), "-e", env_name]
+        return (
+            [
+                'deploy-stager',
+                '-f',
+                self._config.get_config_filename(),
+                '-v',
+                build,
+                '-t',
+                self._config.get_target(),
+                "-e",
+                env_name,
+            ]
+            if self._config.get_config_filename()
+            else [
+                'deploy-stager',
+                '-v',
+                build,
+                '-t',
+                self._config.get_target(),
+                "-e",
+                env_name,
+            ]
+        )
 
     def _update_ping_reports(self, deploy_report):
         if self._curr_report:
@@ -259,10 +291,7 @@ class DeployAgent(object):
                 self._response = self._client.send_reports(self._envs)
                 return PingStatus.PLAN_CHANGED
 
-            if plan_changed:
-                return PingStatus.PLAN_CHANGED
-            else:
-                return PingStatus.PLAN_NO_CHANGE
+            return PingStatus.PLAN_CHANGED if plan_changed else PingStatus.PLAN_NO_CHANGE
 
     def clean_stale_builds(self):
         if not self._envs:
@@ -277,15 +306,14 @@ class DeployAgent(object):
         num_retain_builds = self._config.get_num_builds_retain()
         env_name = self._curr_report.report.envName
         # clear stale builds
-        if len(builds_to_keep) > 0:
+        if builds_to_keep:
             self.clean_stale_files(env_name, builds_dir, builds_to_keep, num_retain_builds)
 
     def clean_stale_files(self, env_name, dir, files_to_keep, num_file_to_retain):
         for build in self._helper.get_stale_builds(self._helper.builds_available_locally(dir,env_name),
                                                    num_file_to_retain):
             if build not in files_to_keep:
-                log.info("Stale file {} found in {}... removing.".format(
-                    build, dir))
+                log.info(f"Stale file {build} found in {dir}... removing.")
                 self._helper.clean_package(dir, build, env_name)
 
     # private functions: update per deploy step configuration specified by services owner on the
@@ -306,19 +334,21 @@ class DeployAgent(object):
 
         # update script variables
         if deploy_goal.scriptVariables:
-            log.info('Start to generate script variables for deploy: {}'.
-                     format(deploy_goal.deployId))
+            log.info(
+                f'Start to generate script variables for deploy: {deploy_goal.deployId}'
+            )
+
             env_dir = self._config.get_agent_directory()
-            working_dir = os.path.join(env_dir, "{}_SCRIPT_CONFIG".format(env_name))
+            working_dir = os.path.join(env_dir, f"{env_name}_SCRIPT_CONFIG")
             with open(working_dir, "w+") as f:
                 for key, value in deploy_goal.scriptVariables.items():
-                    f.write("{}={}\n".format(key, value))
+                    f.write(f"{key}={value}\n")
 
         # load deploy goal to the config
         self._curr_report = self._envs[env_name]
         self._config.update_variables(self._curr_report)
         self._executor.update_configs(self._config)
-        log.info('current deploy goal is: {}'.format(deploy_goal))
+        log.info(f'current deploy goal is: {deploy_goal}')
         return DeployReport(status_code=AgentStatus.SUCCEEDED)
 
     def _update_deploy_alias(self, deploy_goal):
@@ -327,8 +357,9 @@ class DeployAgent(object):
             log.warning('Env name does not exist, ignore it.')
         elif deploy_goal.deployAlias:
             self._envs[env_name].deployAlias = deploy_goal.deployAlias
-            log.warning('Update deploy alias to {} for {}'.format(deploy_goal.deployAlias,
-                                                                  deploy_goal.envName))
+            log.warning(
+                f'Update deploy alias to {deploy_goal.deployAlias} for {deploy_goal.envName}'
+            )
 
     @staticmethod
     def plan_changed(old_response, new_response):
@@ -350,10 +381,10 @@ class DeployAgent(object):
             return True
 
         # if this is a new deploy stage
-        if old_response.deployGoal.deployStage != new_response.deployGoal.deployStage:
-            return True
-
-        return False
+        return (
+            old_response.deployGoal.deployStage
+            != new_response.deployGoal.deployStage
+        )
 
 # make sure only one instance is running
 instance = SingleInstance()
@@ -420,9 +451,7 @@ def main():
     utils.listen()
     if args.daemon:
         logger = logging.getLogger()
-        handles = []
-        for handler in logger.handlers:
-            handles.append(handler.stream.fileno())
+        handles = [handler.stream.fileno() for handler in logger.handlers]
         with daemon.DaemonContext(files_preserve=handles):
             agent.serve_forever()
     else:

@@ -21,4 +21,4 @@ deployclient = DeployClient()
 
 
 def get_hosts_by_name(request, host_name):
-    return deployclient.get("/hosts/%s" % host_name, request.teletraan_user_id.token)
+    return deployclient.get(f"/hosts/{host_name}", request.teletraan_user_id.token)

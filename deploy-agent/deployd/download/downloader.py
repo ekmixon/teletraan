@@ -48,30 +48,32 @@ class Downloader(object):
 
     def download(self):
         extension = self._get_extension(self._url.lower())
-        local_fn = u'{}-{}.{}'.format(self._build_name, self._build, extension)
+        local_fn = f'{self._build_name}-{self._build}.{extension}'
         local_full_fn = os.path.join(self._base_dir, local_fn)
-        extracted_file = os.path.join(self._base_dir, '{}.extracted'.format(self._build))
+        extracted_file = os.path.join(self._base_dir, f'{self._build}.extracted')
         if os.path.exists(extracted_file):
-            log.info("{} exists. tarball have already been extracted.".format(extracted_file))
+            log.info(f"{extracted_file} exists. tarball have already been extracted.")
             return Status.SUCCEEDED
 
         working_dir = os.path.join(self._base_dir, self._build)
         if not os.path.exists(working_dir):
-            log.info('Create directory {}.'.format(working_dir))
+            log.info(f'Create directory {working_dir}.')
             os.mkdir(working_dir)
 
-        downloader = DownloadHelperFactory.gen_downloader(self._url, self._config)
-        if downloader:
-            status = downloader.download(local_full_fn)
-            if status != Status.SUCCEEDED:
-                return status
-        else:
+        if not (
+            downloader := DownloadHelperFactory.gen_downloader(
+                self._url, self._config
+            )
+        ):
             return Status.FAILED
 
+        status = downloader.download(local_full_fn)
+        if status != Status.SUCCEEDED:
+            return status
         if extension == 'gpg':
             try:
-                log.info("gpg decrypting {}.".format(local_full_fn))
-                
+                log.info(f"gpg decrypting {local_full_fn}.")
+
                 # assuming we use the standard GPG toolset, it creates the following format with gpg --encrypt:
                 # input: file.extension
                 # output: file.extension.gpg
@@ -83,19 +85,19 @@ class Downloader(object):
 
                 # decrypt gpg archive
                 status = gpgHelper.decryptFile(local_full_fn, dest_full_fn)
-                
+
                 if status != Status.SUCCEEDED:
                     # die if we hit a decryption or signing error
                     return status
 
                 # remove encrypted gpg archive since it is no longer needed
                 os.remove(local_full_fn)
-                
+
                 # Rebase the extension and file path to the decrypted file
                 local_full_fn = dest_full_fn
                 extension = innerExtension
 
-                # GPG decryption complete, move to normal logic
+                        # GPG decryption complete, move to normal logic
             except Exception:
                 status = Status.FAILED
                 log.error(traceback.format_exc())
@@ -105,11 +107,11 @@ class Downloader(object):
         os.chdir(working_dir)
         try:
             if extension == 'zip':
-                log.info("unzip files to {}".format(working_dir))
+                log.info(f"unzip files to {working_dir}")
                 with zipfile.ZipFile(local_full_fn) as zfile:
                     zfile.extractall(working_dir)
             else:
-                log.info("untar files to {}".format(working_dir))
+                log.info(f"untar files to {working_dir}")
                 with tarfile.open(local_full_fn) as tfile:
                     tfile.extractall(working_dir)
 
@@ -117,13 +119,13 @@ class Downloader(object):
             os.chdir(curr_working_dir)
             with open(extracted_file, 'w'):
                 pass
-            log.info("Successfully extracted {} to {}".format(local_full_fn, working_dir))
+            log.info(f"Successfully extracted {local_full_fn} to {working_dir}")
         except tarfile.TarError as e:
             status = Status.FAILED
-            log.error("Failed to extract files: {}".format(e))
+            log.error(f"Failed to extract files: {e}")
         except OSError as e:
             status = Status.FAILED
-            log.error("Failed: {}".format(e))
+            log.error(f"Failed: {e}")
         except Exception:
             status = Status.FAILED
             log.error(traceback.format_exc())

@@ -30,4 +30,6 @@ def create_ratings(request, rating, feedback):
 
 
 def is_user_eligible(request, user_name):
-    return deployclient.get("/ratings/%s/is_eligible" % user_name, request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/ratings/{user_name}/is_eligible", request.teletraan_user_id.token
+    )

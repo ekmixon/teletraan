@@ -47,8 +47,12 @@ def get_hotfix(request, name, stage, id):
     urlPattern = systems_helper.get_url_pattern(request)
     commits = []
     _create_commits(commits, urlPattern['template'], hotfix)
-    jenkins_url = "%s/%s/%s" % (BUILD_URL, hotfix['jobName'],
-                                hotfix['jobNum']) if hotfix['jobName'] and hotfix['jobNum'] else ''
+    jenkins_url = (
+        f"{BUILD_URL}/{hotfix['jobName']}/{hotfix['jobNum']}"
+        if hotfix['jobName'] and hotfix['jobNum']
+        else ''
+    )
+
     return render(request, 'hotfixs/hotfix_detail.html', {
         "env": env,
         "hotfix": hotfix,
@@ -66,8 +70,12 @@ def get_hotfix_detail(request, id):
     urlPattern = systems_helper.get_url_pattern(request)
     commits = []
     _create_commits(commits, urlPattern['template'], hotfix)
-    jenkins_url = "%s/%s/%s" % (BUILD_URL, hotfix['jobName'],
-                                hotfix['jobNum']) if hotfix['jobName'] and hotfix['jobNum'] else ''
+    jenkins_url = (
+        f"{BUILD_URL}/{hotfix['jobName']}/{hotfix['jobNum']}"
+        if hotfix['jobName'] and hotfix['jobNum']
+        else ''
+    )
+
     html = render_to_string('hotfixs/hotfix_detail.tmpl', {
         "hotfix": hotfix,
         "commits": commits,
@@ -135,4 +143,4 @@ class HotfixesView(View):
         # TODO need a better way to handle this
         commits_txt = ','.join(commits)
         id = hotfixs_helper.create(request, name, baseDeployId, commits_txt)['id']
-        return redirect('/env/%s/%s/hotfix/%s' % (name, stage, id))
+        return redirect(f'/env/{name}/{stage}/hotfix/{id}')

@@ -16,6 +16,7 @@
 '''
 This is a positive ping test to go through a success deploy
 '''
+
 import unittest
 import time
 import commons
@@ -24,11 +25,11 @@ import threading
 systems_helper = commons.get_system_helper()
 environs_helper = commons.get_environ_helper()
 deploys_helper = commons.get_deploy_helper()
-envName = "agent-test-env-" + commons.gen_random_num()
+envName = f"agent-test-env-{commons.gen_random_num()}"
 stageName = "prod"
 commit = commons.gen_random_num(32)
 hostNamePrefix = "agent-test-host-"
-group = "agent-test-group-" + commons.gen_random_num()
+group = f"agent-test-group-{commons.gen_random_num()}"
 
 
 class TestPings(unittest.TestCase):
@@ -52,41 +53,45 @@ class TestPings(unittest.TestCase):
 
     def _empty_ping(self, idx, groups):
         host = hostNamePrefix + idx
-        ip = "%s.%s.%s.%s" % (idx, idx, idx, idx)
-        pingRequest = {}
-        pingRequest['hostId'] = host
-        pingRequest['hostName'] = host
-        pingRequest['hostIp'] = ip
-        pingRequest['groups'] = groups
-        pingRequest['reports'] = []
+        ip = f"{idx}.{idx}.{idx}.{idx}"
+        pingRequest = {
+            'hostId': host,
+            'hostName': host,
+            'hostIp': ip,
+            'groups': groups,
+            'reports': [],
+        }
+
         systems_helper.ping(commons.REQUEST, pingRequest)
 
     def _ping(self, idx, groups):
         host = hostNamePrefix + idx
-        ip = "%s.%s.%s.%s" % (idx, idx, idx, idx)
+        ip = f"{idx}.{idx}.{idx}.{idx}"
         reports = {}
 
         while True:
-            pingRequest = {}
-            pingRequest['hostId'] = host
-            pingRequest['hostName'] = host
-            pingRequest['hostIp'] = ip
-            pingRequest['groups'] = groups
+            pingRequest = {
+                'hostId': host,
+                'hostName': host,
+                'hostIp': ip,
+                'groups': groups,
+                'reports': reports.values(),
+            }
+
+            pingResponse = systems_helper.ping(commons.REQUEST, pingRequest)
             pingRequest['reports'] = reports.values()
 
             pingResponse = systems_helper.ping(commons.REQUEST, pingRequest)
             if pingResponse['opCode'] == "NOOP":
                 continue
-            else:
-                print "%s :-> %s:%s" % (host,
-                                        pingResponse['opCode'],
-                                        pingResponse['deployGoal']['deployStage'])
             goal = pingResponse['deployGoal']
-            report = {}
-            report['envId'] = goal['envId']
-            report['deployId'] = goal['deployId']
-            report['agentStatus'] = "SUCCEEDED"
-            report['deployStage'] = goal['deployStage']
+            report = {
+                'envId': goal['envId'],
+                'deployId': goal['deployId'],
+                'agentStatus': "SUCCEEDED",
+                'deployStage': goal['deployStage'],
+            }
+
             reports[goal['envId']] = report
 
             # verifications
@@ -126,9 +131,7 @@ class TestPings(unittest.TestCase):
         for t in threads:
             t.join()
 
-        while True:
-            if self._check_deploy_complete():
-                break
+        while not self._check_deploy_complete():
             time.sleep(1)
 
 

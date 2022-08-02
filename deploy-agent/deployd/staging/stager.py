@@ -48,13 +48,13 @@ class Stager(object):
         old_build = self.get_enabled_build()
         if self._build == old_build:
             self.transform_script()
-            log.info("Build already at {}".format(self._build))
+            log.info(f"Build already at {self._build}")
             return Status.SUCCEEDED
 
         old_build = self.get_enabled_build()
         build_dir = os.path.join(self._build_dir, self._build)
         # Make a tmp_symlink
-        tmp_symlink = "{}_tmp".format(self._target)
+        tmp_symlink = f"{self._target}_tmp"
         if os.path.exists(tmp_symlink):
             os.remove(tmp_symlink)
 
@@ -62,9 +62,9 @@ class Stager(object):
         try:
             # change the owner of the directory
             uinfo = getpwnam(self._user_role)
-            owner = '{}:{}'.format(uinfo.pw_uid, uinfo.pw_gid)
+            owner = f'{uinfo.pw_uid}:{uinfo.pw_gid}'
             commands = ['chown', '-R', owner, build_dir]
-            log.info('Running command: {}'.format(' '.join(commands)))
+            log.info(f"Running command: {' '.join(commands)}")
             output, error, status = Caller().call_and_log(commands)
             if status != 0:
                 log.error(error)
@@ -74,10 +74,10 @@ class Stager(object):
             os.symlink(build_dir, tmp_symlink)
             # Move tmp_symlink over existing symlink.
             os.rename(tmp_symlink, self._target)
-            log.info("{} points to {} (previously {})".format(
-                self._target,
-                self.get_enabled_build(),
-                old_build))
+            log.info(
+                f"{self._target} points to {self.get_enabled_build()} (previously {old_build})"
+            )
+
             self.transform_script()
         except Exception:
             log.error(traceback.format_exc())
@@ -91,14 +91,13 @@ class Stager(object):
             if (os.path.islink(self._target) and not
                     os.path.lexists(self._target)):
                 symlink_target = os.readlink(self._target)
-                log.info("{} points to {} which does not exist".format(
-                    self._target, symlink_target))
+                log.info(f"{self._target} points to {symlink_target} which does not exist")
             else:
-                log.info("{} does not exist".format(self._target))
+                log.info(f"{self._target} does not exist")
             return None
 
         if not os.path.islink(self._target):
-            log.info("{} is not a symlink".format(self._target))
+            log.info(f"{self._target} is not a symlink")
             return None
 
         symlink_target = os.readlink(self._target)
@@ -138,10 +137,7 @@ def main():
     log.info("Start to stage the package.")
     result = Stager(config=config, build=args.build,
                     target=args.target, env_name=args.env_name).enable_package()
-    if result == Status.SUCCEEDED:
-        return 0
-    else:
-        return 1
+    return 0 if result == Status.SUCCEEDED else 1
 
 
 if __name__ == '__main__':

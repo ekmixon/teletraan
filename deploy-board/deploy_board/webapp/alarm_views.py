@@ -53,9 +53,7 @@ class EnvAlarmView(View):
             if not value:
                 continue
             if key.startswith('TELETRAAN_'):
-                alarm = {}
-                alarm['name'] = key[len('TELETRAAN_'):]
-                alarm['alarmUrl'] = value
+                alarm = {'name': key[len('TELETRAAN_'):], 'alarmUrl': value}
                 alarms.append(alarm)
 
         environs_helper.update_env_alarms_config(request, name, stage, alarms)

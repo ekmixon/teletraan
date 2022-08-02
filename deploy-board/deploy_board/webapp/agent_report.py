@@ -78,10 +78,7 @@ def genStageDistMap():
 
 
 def genStateDistMap():
-    stateDistMap = {}
-    for state in environs_helper.AGENT_STATE_VALUES:
-        stateDistMap[state] = 0
-    return stateDistMap
+    return {state: 0 for state in environs_helper.AGENT_STATE_VALUES}
 
 
 def addToEnvReport(request, deployStats, agent, env):
@@ -104,11 +101,8 @@ def addToEnvReport(request, deployStats, agent, env):
 
     isCurrent = (deployId == env['deployId'])
 
-    isStale = False
     duration = (time.time() * 1000 - agent['lastUpdateDate']) / 1000
-    if duration >= DEFAULT_STALE_THRESHOLD:
-        isStale = True
-
+    isStale = duration >= DEFAULT_STALE_THRESHOLD
     return AgentStatistics(agent=agent, isCurrent=isCurrent, isStale=isStale)
 
 
@@ -125,20 +119,13 @@ def _compare_agent_status(agentStats1, agentStats2):
         return -1
 
     if agentStats1.agent['deployStage'] != agentStats2.agent['deployStage']:
-        if agentStats1.agent['deployStage'] == "SERVING_BUILD":
-            return 1
-        else:
-            return -1
-
+        return 1 if agentStats1.agent['deployStage'] == "SERVING_BUILD" else -1
     return 0
 
 
 def gen_report(request, env, progress, sortByStatus="false"):
     agentStats = []
     firstTimeAgentStats = []
-    deployStats = {}
-    deprecatedDeployStats = []
-
     # always set the current
     deploy = deploys_helper.get(request, env['deployId'])
     build_info = builds_helper.get_build_and_tag(request, deploy["buildId"])
@@ -146,8 +133,7 @@ def gen_report(request, env, progress, sortByStatus="false"):
     stateDistMap = genStateDistMap()
     currentDeployStat = DeployStatistics(deploy=deploy, build=build_info['build'], stageDistMap=stageDistMap,
                                          stateDistMap=stateDistMap, buildTag=build_info.get('tag'))
-    deployStats[env['deployId']] = currentDeployStat
-
+    deployStats = {env['deployId']: currentDeployStat}
     for agent in progress["agents"]:
         if agent["firstDeploy"]:
             firstTimeAgentStats.append(addToEnvReport(request, deployStats, agent, env))
@@ -157,9 +143,11 @@ def gen_report(request, env, progress, sortByStatus="false"):
     if sortByStatus == "true":
         agentStats.sort(cmp=lambda x, y: _compare_agent_status(x, y))
 
-    for key, value in deployStats.iteritems():
-        if key != env['deployId']:
-            deprecatedDeployStats.append(value)
+    deprecatedDeployStats = [
+        value
+        for key, value in deployStats.iteritems()
+        if key != env['deployId']
+    ]
 
     provisioning_hosts = progress["provisioningHosts"]
 
@@ -173,30 +161,25 @@ def gen_report(request, env, progress, sortByStatus="false"):
 
 
 def gen_agent_by_deploy(progress, deployId, reportKind, deployStage=""):
-    agent_wrapper = {}
-    agent_wrapper[deployId] = []
-
+    agent_wrapper = {deployId: []}
     # get total alive hosts
     if deployStage == TOTAL_ALIVE_HOST_REPORT:
         for agent in progress['agents']:
             if agent['deployId'] == deployId:
                 agent_wrapper[deployId].append(agent)
 
-    # get unknown (unreachable) hosts
     elif reportKind == UNKNOWN_HOST_REPORT:
         for agent in progress['missingHosts']:
             # create a fake agent to pass into the agent wrapper
             missingAgent = {'hostName': agent, 'lastErrorCode': UNKNOWN_HOSTS_CODE}
             agent_wrapper[deployId].append(missingAgent)
 
-    # get provisioning hosts
     elif reportKind == PROVISION_HOST_REPORT:
         for host in progress['provisioningHosts']:
             # create a fake agent to pass into the agent wrapper
             newHost = {'hostName': host.get('hostName'), 'hostId': host.get('hostId'), 'lastErrorCode': PROVISION_HOST_CODE}
             agent_wrapper[deployId].append(newHost)
 
-    # get all hosts (alive + unknown)
     elif reportKind == TOTAL_HOST_REPORT:
         for agent in progress['agents']:
             agent_wrapper[deployId].append(agent)
@@ -204,7 +187,6 @@ def gen_agent_by_deploy(progress, deployId, reportKind, deployStage=""):
             missingAgent = {'hostName': agent, 'lastErrorCode': UNKNOWN_HOSTS_CODE}
             agent_wrapper[deployId].append(missingAgent)
 
-    # get all failed status
     elif reportKind == FAILED_HOST_REPORT:
         for agent in progress['agents']:
             if is_agent_failed(agent):
@@ -212,8 +194,10 @@ def gen_agent_by_deploy(progress, deployId, reportKind, deployStage=""):
 
     else:
         for agent in progress['agents']:
-            if agent['deployId'] == deployId:
-                if agent['deployStage'] == deployStage:
-                    agent_wrapper[deployId].append(agent)
+            if (
+                agent['deployId'] == deployId
+                and agent['deployStage'] == deployStage
+            ):
+                agent_wrapper[deployId].append(agent)
 
     return agent_wrapper

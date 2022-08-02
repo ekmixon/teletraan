@@ -32,10 +32,12 @@ class PingRequest(object):
         self.stageType = stageType
 
     def to_json(self):
-        ping_requests = {}
-        ping_requests["hostId"] = self.hostId
-        ping_requests["hostName"] = self.hostName
-        ping_requests["hostIp"] = self.hostIp
+        ping_requests = {
+            "hostId": self.hostId,
+            "hostName": self.hostName,
+            "hostIp": self.hostIp,
+        }
+
         if self.autoscalingGroup:
             ping_requests["autoscalingGroup"] = self.autoscalingGroup
         if self.availabilityZone:
@@ -48,33 +50,26 @@ class PingRequest(object):
             ping_requests["groups"] = list(self.groups)
         ping_requests["reports"] = []
         for report in self.reports:
-            ping_report = {}
-            ping_report["deployId"] = report.deployId
-            ping_report["envId"] = report.envId
+            ping_report = {
+                "deployId": report.deployId,
+                "envId": report.envId,
+                "deployStage": DeployStage._VALUES_TO_NAMES[report.deployStage]
+                if isinstance(report.deployStage, int)
+                else report.deployStage,
+                "agentStatus": AgentStatus._VALUES_TO_NAMES[report.status]
+                if isinstance(report.status, int)
+                else report.status,
+                "errorCode": report.errorCode,
+                "errorMessage": report.errorMessage,
+                "failCount": report.failCount,
+                "deployAlias": report.deployAlias,
+            }
 
-            # TODO: Only used for migration, should remove later
-            if isinstance(report.deployStage, int):
-                ping_report["deployStage"] = DeployStage._VALUES_TO_NAMES[report.deployStage]
-            else:
-                ping_report["deployStage"] = report.deployStage
-
-            if isinstance(report.status, int):
-                ping_report["agentStatus"] = AgentStatus._VALUES_TO_NAMES[report.status]
-            else:
-                ping_report["agentStatus"] = report.status
-
-            ping_report["errorCode"] = report.errorCode
-            ping_report["errorMessage"] = report.errorMessage
-            ping_report["failCount"] = report.failCount
-            ping_report["deployAlias"] = report.deployAlias
             if report.extraInfo:
                 ping_report["extraInfo"] = \
-                    json.dumps(report.extraInfo, ensure_ascii=False).encode('utf8')
+                        json.dumps(report.extraInfo, ensure_ascii=False).encode('utf8')
             ping_requests["reports"].append(ping_report)
         return ping_requests
 
     def __str__(self):
-        return "PingRequest(hostId={}, hostName={}, hostIp={}, agentVersion={}, autoscalingGroup={}, " \
-            "availabilityZone={}, stageType={}, groups={}, reports={})".format(self.hostId, self.hostName, 
-            self.hostIp, self.agentVersion, self.autoscalingGroup, self.availabilityZone, self.stageType,
-            self.groups, ",".join(str(v) for v in self.reports))
+        return f'PingRequest(hostId={self.hostId}, hostName={self.hostName}, hostIp={self.hostIp}, agentVersion={self.agentVersion}, autoscalingGroup={self.autoscalingGroup}, availabilityZone={self.availabilityZone}, stageType={self.stageType}, groups={self.groups}, reports={",".join((str(v) for v in self.reports))})'

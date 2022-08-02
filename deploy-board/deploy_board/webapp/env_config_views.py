@@ -64,23 +64,19 @@ class EnvConfigView(View):
 
     def _set_parallel(self, data, query_dict):
         input = query_dict["maxParallel"]
-        if input == "Number" and query_dict["maxParallelValue"] :
+        if input == "Number" and query_dict["maxParallelValue"]:
             data["maxParallelPct"] = 0
             data["maxParallel"] = int(query_dict["maxParallelValue"])
         elif input == "Percentage" and query_dict["maxParallelPctValue"]:
             data["maxParallel"] = 0
             data["maxParallelPct"] = int(query_dict["maxParallelPctValue"])
         else:
-            raise ValueError("Invalid Input for Maximum Parallel Number. input:{}".format(input))
+            raise ValueError(f"Invalid Input for Maximum Parallel Number. input:{input}")
 
 
     def post(self, request, name, stage):
         query_dict = request.POST
-        data = {}
-        if "notify_author" in query_dict:
-            data["notifyAuthors"] = True
-        else:
-            data["notifyAuthors"] = False
+        data = {"notifyAuthors": "notify_author" in query_dict}
         if "systemPriority" in query_dict:
             data["systemPriority"] = query_dict["systemPriority"]
         self._set_parallel(data, query_dict)

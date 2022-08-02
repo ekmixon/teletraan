@@ -27,7 +27,7 @@ logger.level = logging.DEBUG
 class LocalDownloadFunctionsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.url = "file://%s%s" % (os.path.dirname(os.path.realpath(__file__)), "/test.txt")
+        cls.url = f"file://{os.path.dirname(os.path.realpath(__file__))}/test.txt"
         cls.base_dir = tempfile.mkdtemp()
         builds_dir = os.path.join(cls.base_dir, 'teletraan')
         cls.builds_dir = builds_dir

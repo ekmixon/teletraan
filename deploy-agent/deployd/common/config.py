@@ -46,13 +46,13 @@ class Config(object):
             return
 
         if not os.path.exists(filenames):
-            print('Cannot find config files: {}'.format(filenames))
+            print(f'Cannot find config files: {filenames}')
             exit_abruptly(1)
 
         self._filenames = filenames
         loaded_filenames = self._config_reader.read(self._filenames)
         if len(loaded_filenames) == 0:
-            print('Cannot read config files: {}'.format(self._filenames))
+            print(f'Cannot read config files: {self._filenames}')
             exit_abruptly(1)
 
     def get_config_filename(self):
@@ -64,7 +64,7 @@ class Config(object):
             return DeployType.RESTART
         elif opCode == 'ROLLBACK':
             return DeployType.ROLLBACK
-        elif opCode == 'STOP' or opCode == 'TERMINATE':
+        elif opCode in ['STOP', 'TERMINATE']:
             return DeployType.STOP
         else:
             return DeployType.REGULAR
@@ -83,7 +83,7 @@ class Config(object):
         # TODO: This is only used for migration, should clean them up
         if isinstance(deploy_status.report.deployStage, int):
             os.environ['DEPLOY_STEP'] = \
-                DeployStage._VALUES_TO_NAMES[deploy_status.report.deployStage]
+                    DeployStage._VALUES_TO_NAMES[deploy_status.report.deployStage]
         else:
             os.environ['DEPLOY_STEP'] = deploy_status.report.deployStage
 
@@ -135,31 +135,29 @@ class Config(object):
         except Exception:
             if default_value is not None:
                 return default_value
-            raise DeployConfigException('{} cannot be found.'.format(var_name))
+            raise DeployConfigException(f'{var_name} cannot be found.')
 
     def get_intvar(self, var_name, default_value=None):
         return int(self.get_var(var_name, default_value))
 
     def get_target(self):
         target_default_dir = self.get_var("target_default_dir", "/tmp")
-        if not (self._configs and self._configs.get('target')):
-            return os.path.join(target_default_dir, os.environ['ENV_NAME'])
-
-        return self._configs.get('target')
+        return (
+            self._configs.get('target')
+            if (self._configs and self._configs.get('target'))
+            else os.path.join(target_default_dir, os.environ['ENV_NAME'])
+        )
 
     def get_subprocess_log_name(self):
         if 'ENV_NAME' in os.environ:
-            return '{}/{}.log'.format(self.get_log_directory(), os.environ['ENV_NAME'])
+            return f"{self.get_log_directory()}/{os.environ['ENV_NAME']}.log"
         else:
             return os.path.join(self.get_log_directory(), "deploy_subprocess.log")
 
     def get_script_directory(self):
-        script_dir = '{}/teletraan/'.format(self.get_target())
+        script_dir = f'{self.get_target()}/teletraan/'
         subscript_dir = os.path.join(script_dir, os.environ['ENV_NAME'])
-        if os.path.exists(subscript_dir):
-            return subscript_dir
-        else:
-            return script_dir
+        return subscript_dir if os.path.exists(subscript_dir) else script_dir
 
     def get_agent_directory(self):
         return self.get_var("deploy_agent_dir", "/tmp/deployd/")

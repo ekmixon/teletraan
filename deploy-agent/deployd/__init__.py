@@ -15,6 +15,6 @@
 import os
 
 # Pinterest specific settings
-IS_PINTEREST = True if os.getenv("IS_PINTEREST", "false") == "true" else False
+IS_PINTEREST = os.getenv("IS_PINTEREST", "false") == "true"
 
 __version__ = '1.2.28'

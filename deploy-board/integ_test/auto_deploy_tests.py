@@ -29,8 +29,8 @@ PROD = "prod"
 
 class TestAutoDeploy(unittest.TestCase):
     def setUp(self):
-        self.host = "test-cd-host-" + commons.gen_random_num()
-        self.envName = "test-cd-env-" + commons.gen_random_num()
+        self.host = f"test-cd-host-{commons.gen_random_num()}"
+        self.envName = f"test-cd-env-{commons.gen_random_num()}"
         self.env_canary = commons.create_env(self.envName, CANARY)
         self.env_prod = commons.create_env(self.envName, PROD)
         self.commit = commons.gen_random_num(32)
@@ -42,24 +42,21 @@ class TestAutoDeploy(unittest.TestCase):
         builds_helper.delete_build(commons.REQUEST, self.build['id'])
 
     def _fail_deploy(self, deploy, stage=PROD):
-        pingRequest = {}
-        pingRequest['hostId'] = self.host
-        pingRequest['hostName'] = self.host
-        pingRequest['hostIp'] = "8.8.8.8"
-        report = {}
-        report['envId'] = self.env_prod['id']
-        report['deployId'] = deploy['id']
-        report['deployStage'] = "RESTARTING"
-        report['agentStatus'] = "TOO_MANY_RETRY"
+        pingRequest = {'hostId': self.host, 'hostName': self.host, 'hostIp': "8.8.8.8"}
+        report = {
+            'envId': self.env_prod['id'],
+            'deployId': deploy['id'],
+            'deployStage': "RESTARTING",
+            'agentStatus': "TOO_MANY_RETRY",
+        }
+
         pingRequest['reports'] = [report]
         systems_helper.ping(commons.REQUEST, pingRequest)
 
     def _assertDeploy(self, stage, expect_commit):
-        count = 0
-        while (count < 300):
+        for _ in range(300):
             env = environs_helper.get_env_by_stage(commons.REQUEST, self.envName, stage)
-            deployId = env.get('deployId')
-            if deployId:
+            if deployId := env.get('deployId'):
                 deploy = deploys_helper.get(commons.REQUEST, env['deployId'])
                 build = builds_helper.get_build(commons.REQUEST, deploy['buildId'])
                 if build['commit'] == expect_commit:
@@ -67,13 +64,10 @@ class TestAutoDeploy(unittest.TestCase):
             print("."),
             sys.stdout.flush()
             time.sleep(1)
-            count = count + 1
-        self.fail("Timed out when wait for deploy for %s to happen" % expect_commit)
+        self.fail(f"Timed out when wait for deploy for {expect_commit} to happen")
 
     def testBuildToCanaryToProd(self):
-        data = {}
-        data["type"] = "AUTO"
-        data["predStage"] = "BUILD"
+        data = {"type": "AUTO", "predStage": "BUILD"}
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName,
                                                    CANARY, data=data)
         data["predStage"] = CANARY
@@ -81,15 +75,13 @@ class TestAutoDeploy(unittest.TestCase):
                                                    PROD, data=data)
         self._assertDeploy(PROD, self.commit)
         deployId = \
-            environs_helper.get_env_by_stage(commons.REQUEST, self.envName, CANARY)['deployId']
+                environs_helper.get_env_by_stage(commons.REQUEST, self.envName, CANARY)['deployId']
         deploys_helper.delete(commons.REQUEST, deployId)
         deployId = environs_helper.get_env_by_stage(commons.REQUEST, self.envName, PROD)['deployId']
         deploys_helper.delete(commons.REQUEST, deployId)
 
     def testDisablePolicyAuto(self):
-        data = {}
-        data["type"] = "AUTO"
-        data["disablePolicy"] = "AUTO"
+        data = {"type": "AUTO", "disablePolicy": "AUTO"}
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName, PROD, data=data)
         deploy = deploys_helper.deploy(commons.REQUEST, self.envName, PROD, self.build['id'])
         promote_config = environs_helper.get_env_promotes_config(commons.REQUEST, self.envName,
@@ -98,9 +90,7 @@ class TestAutoDeploy(unittest.TestCase):
         deploys_helper.delete(commons.REQUEST, deploy['id'])
 
     def testDisablePolicyManual(self):
-        data = {}
-        data["type"] = "AUTO"
-        data["disablePolicy"] = "MANUAL"
+        data = {"type": "AUTO", "disablePolicy": "MANUAL"}
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName, PROD, data=data)
         deploy = deploys_helper.deploy(commons.REQUEST, self.envName, PROD, self.build['id'])
         promote_config = environs_helper.get_env_promotes_config(commons.REQUEST, self.envName,
@@ -109,8 +99,7 @@ class TestAutoDeploy(unittest.TestCase):
         deploys_helper.delete(commons.REQUEST, deploy['id'])
 
     def _assertState(self, stage, expect_state):
-        count = 0
-        while (count < 150):
+        for _ in range(150):
             promote_config = environs_helper.get_env_promotes_config(commons.REQUEST, self.envName,
                                                                      stage)
             if promote_config['type'] == expect_state:
@@ -118,8 +107,7 @@ class TestAutoDeploy(unittest.TestCase):
             print("."),
             sys.stdout.flush()
             time.sleep(1)
-            count = count + 1
-        self.fail("Timed out when wait for promote state to be %s" % expect_state)
+        self.fail(f"Timed out when wait for promote state to be {expect_state}")
 
     def testFailPolicyContinue(self):
         deploy = deploys_helper.deploy(commons.REQUEST, self.envName, PROD, self.build['id'])
@@ -128,11 +116,13 @@ class TestAutoDeploy(unittest.TestCase):
         self._fail_deploy(deploy)
         # make deploy fail happens faster
         deploys_helper.update_progress(commons.REQUEST, self.envName, PROD)
-        data = {}
-        data["type"] = "AUTO"
-        data["disablePolicy"] = "MANUAL"
-        data["predStage"] = CANARY
-        data["failPolicy"] = "CONTINUE"
+        data = {
+            "type": "AUTO",
+            "disablePolicy": "MANUAL",
+            "predStage": CANARY,
+            "failPolicy": "CONTINUE",
+        }
+
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName, PROD, data=data)
         promote_config = environs_helper.get_env_promotes_config(commons.REQUEST, self.envName,
                                                                  PROD)
@@ -149,11 +139,13 @@ class TestAutoDeploy(unittest.TestCase):
         self._fail_deploy(deploy)
         # make deploy fail happens faster
         deploys_helper.update_progress(commons.REQUEST, self.envName, PROD)
-        data = {}
-        data["type"] = "AUTO"
-        data["disablePolicy"] = "MANUAL"
-        data["predStage"] = CANARY
-        data["failPolicy"] = "DISABLE"
+        data = {
+            "type": "AUTO",
+            "disablePolicy": "MANUAL",
+            "predStage": CANARY,
+            "failPolicy": "DISABLE",
+        }
+
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName, PROD, data=data)
         self._assertState(PROD, "MANUAL")
         deploys_helper.delete(commons.REQUEST, deploy['id'])
@@ -172,11 +164,13 @@ class TestAutoDeploy(unittest.TestCase):
         self._fail_deploy(deploy)
         deploys_helper.update_progress(commons.REQUEST, self.envName, PROD)
 
-        data = {}
-        data["type"] = "AUTO"
-        data["disablePolicy"] = "MANUAL"
-        data["predStage"] = CANARY
-        data["failPolicy"] = "ROLLBACK"
+        data = {
+            "type": "AUTO",
+            "disablePolicy": "MANUAL",
+            "predStage": CANARY,
+            "failPolicy": "ROLLBACK",
+        }
+
         environs_helper.update_env_promotes_config(commons.REQUEST, self.envName, PROD, data=data)
 
         self._assertState(PROD, "MANUAL")

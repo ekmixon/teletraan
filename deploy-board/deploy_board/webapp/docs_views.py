@@ -18,7 +18,10 @@ from django.shortcuts import render
 
 class SwaggerUIView(View):
     def get(self, request):
-        response = render(request, 'swagger-ui/dist/index.html', {
-            "token": request.session.get('oauth_token'),
-        })
-        return response
+        return render(
+            request,
+            'swagger-ui/dist/index.html',
+            {
+                "token": request.session.get('oauth_token'),
+            },
+        )

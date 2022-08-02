@@ -44,9 +44,4 @@ class Build(object):
             self.publishDate = jsonValue.get('publishDate')
 
     def __str__(self):
-        return "Build(buildId={}, buildName={}, buildVersion={}, artifactUrl={}, scm={}, " \
-               "scmRepo={}, scmBranch={}, scmCommit={}, scmInfo={}, commitDate={}, publishInfo={}, " \
-               "publishDate={})".format(self.buildId, self.buildName, self.buildVersion,
-                                        self.artifactUrl, self.scm, self.scmRepo, self.scmBranch,
-                                        self.scmCommit, self.scmInfo, self.commitDate,
-                                        self.publishInfo, self.publishDate)
+        return f"Build(buildId={self.buildId}, buildName={self.buildName}, buildVersion={self.buildVersion}, artifactUrl={self.artifactUrl}, scm={self.scm}, scmRepo={self.scmRepo}, scmBranch={self.scmBranch}, scmCommit={self.scmCommit}, scmInfo={self.scmInfo}, commitDate={self.commitDate}, publishInfo={self.publishInfo}, publishDate={self.publishDate})"

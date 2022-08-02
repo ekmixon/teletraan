@@ -28,10 +28,10 @@ stageName = "prod"
 
 class TestPings(unittest.TestCase):
     def setUp(self):
-        self.envName = "ping-test-env-" + commons.gen_random_num()
+        self.envName = f"ping-test-env-{commons.gen_random_num()}"
         self.commit = commons.gen_random_num(32)
-        self.host = "ping-test-host-" + commons.gen_random_num()
-        self.group = "ping-test-group-" + commons.gen_random_num()
+        self.host = f"ping-test-host-{commons.gen_random_num()}"
+        self.group = f"ping-test-group-{commons.gen_random_num()}"
         self.groups = [self.group]
         self.env = commons.create_env(self.envName, stageName)
         environs_helper.update_env_capacity(commons.REQUEST, self.envName, stageName,
@@ -55,22 +55,25 @@ class TestPings(unittest.TestCase):
         ip = "8.8.8.8"
         reports = {}
 
-        pingRequest = {}
-        pingRequest['hostId'] = host
-        pingRequest['hostName'] = host
-        pingRequest['hostIp'] = ip
-        pingRequest['groups'] = groups
-        pingRequest['reports'] = reports
+        pingRequest = {
+            'hostId': host,
+            'hostName': host,
+            'hostIp': ip,
+            'groups': groups,
+            'reports': reports,
+        }
 
-        report = {}
-        report['envId'] = envId
-        report['deployId'] = deployId
-        report['deployStage'] = stage
-        report['agentStatus'] = status
-        report['errorCode'] = error_code
-        report['errorMessage'] = error_message
-        report['deployAlias'] = deploy_alias
-        report['failCount'] = fail_count
+        report = {
+            'envId': envId,
+            'deployId': deployId,
+            'deployStage': stage,
+            'agentStatus': status,
+            'errorCode': error_code,
+            'errorMessage': error_message,
+            'deployAlias': deploy_alias,
+            'failCount': fail_count,
+        }
+
         pingRequest['reports'] = [report]
 
         return systems_helper.ping(commons.REQUEST, pingRequest)

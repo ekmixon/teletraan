@@ -34,11 +34,13 @@ class TestDeploys(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.envName = "test-deploy-" + commons.gen_random_num()
-        data = {}
-        data["envName"] = cls.envName
-        data["stageName"] = CANARY
-        data["acceptanceType"] = "MANUAL"
+        cls.envName = f"test-deploy-{commons.gen_random_num()}"
+        data = {
+            "envName": cls.envName,
+            "stageName": CANARY,
+            "acceptanceType": "MANUAL",
+        }
+
         cls.canaryEnvId = environs_helper.create_env(commons.REQUEST, data)["id"]
 
         data = {}

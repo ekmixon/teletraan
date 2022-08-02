@@ -33,4 +33,4 @@ class PingResponse(object):
                 self.deployGoal = DeployGoal(jsonValue=jsonValue.get('deployGoal'))
 
     def __str__(self):
-        return "PingResponse(opCode={}, deployGoal={})".format(self.opCode, self.deployGoal)
+        return f"PingResponse(opCode={self.opCode}, deployGoal={self.deployGoal})"

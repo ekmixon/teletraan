@@ -21,10 +21,15 @@ deployclient = DeployClient()
 
 
 def get_group_hosts(request, group_name):
-    return deployclient.get("/groups/{}/instances".format(group_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/groups/{group_name}/instances", request.teletraan_user_id.token
+    )
 
 
 def get_replaced_and_good_hosts(request, cluster_name):
     params = {"actionType": "NEW_AND_SERVING_BUILD"}
-    return deployclient.get("/groups/%s/hosts" % cluster_name, request.teletraan_user_id.token, params=params)
+    return deployclient.get(
+        f"/groups/{cluster_name}/hosts",
+        request.teletraan_user_id.token,
+        params=params,
+    )

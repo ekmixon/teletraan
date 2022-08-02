@@ -53,8 +53,4 @@ class PingReport(object):
             self.deployAlias = jsonValue.get('deployAlias')
 
     def __str__(self):
-        return "PingReport(deployId={}, envId={}, deployStage={}, status={}, " \
-               "errorCode={}), errorMessage={}, failCount={}, extraInfo={}, " \
-               "deployAlias={})".format(self.deployId, self.envId, self.deployStage,
-                                        self.status, self.errorCode, self.errorMessage,
-                                        self.failCount, self.extraInfo, self.deployAlias,)
+        return f"PingReport(deployId={self.deployId}, envId={self.envId}, deployStage={self.deployStage}, status={self.status}, errorCode={self.errorCode}), errorMessage={self.errorMessage}, failCount={self.failCount}, extraInfo={self.extraInfo}, deployAlias={self.deployAlias})"

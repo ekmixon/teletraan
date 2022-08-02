@@ -34,8 +34,7 @@ def get_agent_wrapper(request, hostname):
     agent_wrappers = []
     is_unreachable = False
     for agent in agents:
-        agent_wrapper = {}
-        agent_wrapper["agent"] = agent
+        agent_wrapper = {"agent": agent}
         envId = agent['envId']
         agent_env = environs_helper.get(request, envId)
         agent_wrapper["env"] = agent_env
@@ -62,16 +61,18 @@ def get_asg_name(request, hosts):
 
 
 def get_show_terminate(hosts):
-    for host in hosts:
-        if host and host.get('state') and host.get('state') != 'PENDING_TERMINATE' and host.get('state') != 'TERMINATING' and host.get('state') != 'TERMINATED':
-            return True
-    return False
+    return any(
+        host
+        and host.get('state')
+        and host.get('state') != 'PENDING_TERMINATE'
+        and host.get('state') != 'TERMINATING'
+        and host.get('state') != 'TERMINATED'
+        for host in hosts
+    )
 
 
 def get_host_id(hosts):
-    if hosts:
-        return hosts[0].get('hostId')
-    return None
+    return hosts[0].get('hostId') if hosts else None
 
 
 def _get_cloud(json_obj):
@@ -112,8 +113,8 @@ def get_host_details(host_id):
     }
     if IS_PINTEREST and PHOBOS_URL:
         host_ip = instance['config']['internal_address']
-        host_name = instance['config']['name']
         if host_ip is not None:
+            host_name = instance['config']['name']
             phobos_link = PHOBOS_URL + host_name
             host_details['Phobos Link'] = phobos_link
     return host_details

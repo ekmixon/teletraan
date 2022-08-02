@@ -24,7 +24,7 @@ class gpgHelper(object):
     @staticmethod
     def decryptFile(source, destination):
         download_cmd = ['gpg', '--batch', '--yes', '--output', destination, '--decrypt', source]
-        log.info('Running command: {}'.format(' '.join(download_cmd)))
+        log.info(f"Running command: {' '.join(download_cmd)}")
         error_code = Status.SUCCEEDED
         output, error, status = Caller.call_and_log(download_cmd, cwd=os.getcwd())
         if output:
@@ -34,6 +34,6 @@ class gpgHelper(object):
             error_code = Status.FAILED
         if status:
             error_code = Status.FAILED
-        log.info('Finish decrypting: {} to {}'.format(source, destination))
+        log.info(f'Finish decrypting: {source} to {destination}')
         return error_code
         

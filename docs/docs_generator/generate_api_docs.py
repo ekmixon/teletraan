@@ -18,9 +18,9 @@ import os
 import glob
 
 parent_path_generator = lambda _path, x: os.sep.join(_path.split(os.sep)[:-x])
-api_path = '%s/%s' % (parent_path_generator(os.path.dirname(os.path.abspath(__file__)), 1), 'api')
-beans_path = '%s/%s' % (parent_path_generator(os.path.dirname(os.path.abspath(__file__)), 2),
-                        'deploy-service/common/src/main/java/com/pinterest/deployservice/bean')
+api_path = f'{parent_path_generator(os.path.dirname(os.path.abspath(__file__)), 1)}/api'
+
+beans_path = f'{parent_path_generator(os.path.dirname(os.path.abspath(__file__)), 2)}/deploy-service/common/src/main/java/com/pinterest/deployservice/bean'
 
 def generate_big_docs():
     """
@@ -43,22 +43,22 @@ def remove_old_docs():
     """
     files = [f for f in os.listdir(api_path) if f.endswith('.md')]
     for f in files:
-        os.remove('%s/%s' % (api_path, f))
+        os.remove(f'{api_path}/{f}')
 
 
 def write_new_docs():
     """
     Splits up the paths.md file into multiple files, by resource tag
     """
-    with open(api_path + '/paths.md') as f:
+    with open(f'{api_path}/paths.md') as f:
         lines = f.readlines()
     new_file = None
     for line in lines:
         if line.startswith('### '):
-            new_file = open("%s/%s%s" % (api_path, line[3:].strip().replace(' ', ''), '.md'), "a")
+            new_file = open(f"{api_path}/{line[3:].strip().replace(' ', '')}.md", "a")
         if new_file:
             new_file.write(line)
-    os.remove('%s/%s' % (api_path, 'paths.md'))
+    os.remove(f'{api_path}/paths.md')
 
 
 def write_enum_docs():
@@ -66,7 +66,7 @@ def write_enum_docs():
     Because Swagger2Markup doesn't include enum as APIModelDefinitions, we must parse the enum files and create
     definitions for them
     """
-    definitions_file = open('%s/%s' % (api_path, 'definitions.md'), 'a')
+    definitions_file = open(f'{api_path}/definitions.md', 'a')
     definitions_file.write('\n## Enums\n')
     for file_path in glob.glob(os.path.join(beans_path, '*.*')):
         filename = file_path.split('/')[-1].replace('.java', '')

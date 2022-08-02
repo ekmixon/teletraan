@@ -123,14 +123,18 @@ def logging_status(request, name, stage):
     sortByStatus = _fetch_param_with_cookie(
         request, 'sortByStatus', STATUS_COOKIE_NAME, 'true')
 
-    html = render_to_string('deploys/deploy_logging_check_landing.tmpl', {
-        "envs": envs,
-        "csrf_token": get_token(request),
-        "panel_title": "Kafka logging for %s (%s)" % (name, stage),
-        "env": env,
-        "display_stopping_hosts": DISPLAY_STOPPING_HOSTS,
-        "pinterest": IS_PINTEREST
-    })
+    html = render_to_string(
+        'deploys/deploy_logging_check_landing.tmpl',
+        {
+            "envs": envs,
+            "csrf_token": get_token(request),
+            "panel_title": f"Kafka logging for {name} ({stage})",
+            "env": env,
+            "display_stopping_hosts": DISPLAY_STOPPING_HOSTS,
+            "pinterest": IS_PINTEREST,
+        },
+    )
+
 
     response = HttpResponse(html)
 
@@ -151,7 +155,7 @@ def check_logging_status(request, name, stage):
     lognames = request.GET.get('lognames', '')
     topics = request.GET.get('topics', '')
 
-    configStr = "%s:%s" % (topics, lognames)
+    configStr = f"{topics}:{lognames}"
 
     report = agent_report.gen_report(request, env, progress, sortByStatus=sortByStatus)
     kafkaLoggingAddOn = service_add_ons.getKafkaLoggingAddOn(serviceName=name,
@@ -192,9 +196,9 @@ def update_deploy_progress(request, name, stage):
         "display_stopping_hosts": DISPLAY_STOPPING_HOSTS,
         "pinterest": IS_PINTEREST
     }
-    sortByTag = _fetch_param_with_cookie(
-        request, 'sortByTag', MODE_COOKIE_NAME, None)
-    if sortByTag:
+    if sortByTag := _fetch_param_with_cookie(
+        request, 'sortByTag', MODE_COOKIE_NAME, None
+    ):
         report.sortByTag = sortByTag
         context["host_tag_infos"] = environ_hosts_helper.get_host_tags(request, name, stage, sortByTag)
 
@@ -211,7 +215,6 @@ def update_deploy_progress(request, name, stage):
     return response
 
 def update_service_add_ons(request, name, stage):
-    serviceAddOns = []
     env = environs_helper.get_env_by_stage(request, name, stage)
     progress = deploys_helper.update_progress(request, name, stage)
     report = agent_report.gen_report(request, env, progress)
@@ -227,8 +230,7 @@ def update_service_add_ons(request, name, stage):
     dashboardAddOn = service_add_ons.getDashboardAddOn(serviceName=serviceName,
                                                        metrics_dashboard_url=metrics_dashboard_url,
                                                        report=report)
-    serviceAddOns.append(rateLimitingAddOn)
-
+    serviceAddOns = [rateLimitingAddOn]
     if name in KAFKA_LOGGING_ADD_ON_ENVS:
         kafkaLoggingAddOn = service_add_ons.getKafkaLoggingAddOn(serviceName=serviceName,
                                                                  report=report)
@@ -241,49 +243,45 @@ def update_service_add_ons(request, name, stage):
         "pinterest": IS_PINTEREST
     })
 
-    response = HttpResponse(html)
-    return response
+    return HttpResponse(html)
 
 def removeEnvCookie(request, name):
-    if ENV_COOKIE_NAME in request.COOKIES:
-        cookie = request.COOKIES[ENV_COOKIE_NAME]
-        saved_names = cookie.split(',')
-        names = []
-        total = 0
-        for saved_name in saved_names:
-            if total >= ENV_COOKIE_CAPACITY:
-                break
-            if not saved_name == name:
-                names.append(saved_name)
-                total += 1
-        return ','.join(names)
-    else:
+    if ENV_COOKIE_NAME not in request.COOKIES:
         return ""
+    cookie = request.COOKIES[ENV_COOKIE_NAME]
+    saved_names = cookie.split(',')
+    names = []
+    total = 0
+    for saved_name in saved_names:
+        if total >= ENV_COOKIE_CAPACITY:
+            break
+        if saved_name != name:
+            names.append(saved_name)
+            total += 1
+    return ','.join(names)
 
 def genEnvCookie(request, name):
-    if ENV_COOKIE_NAME in request.COOKIES:
-        # keep 5 recent visited env
-        cookie = request.COOKIES[ENV_COOKIE_NAME]
-        saved_names = cookie.split(',')
-        names = [name]
-        total = 1
-        for saved_name in saved_names:
-            if total >= ENV_COOKIE_CAPACITY:
-                break
-            if not saved_name == name:
-                names.append(saved_name)
-                total += 1
-        return ','.join(names)
-    else:
+    if ENV_COOKIE_NAME not in request.COOKIES:
         return name
+    # keep 5 recent visited env
+    cookie = request.COOKIES[ENV_COOKIE_NAME]
+    saved_names = cookie.split(',')
+    names = [name]
+    total = 1
+    for saved_name in saved_names:
+        if total >= ENV_COOKIE_CAPACITY:
+            break
+        if saved_name != name:
+            names.append(saved_name)
+            total += 1
+    return ','.join(names)
 
 
 def getRecentEnvNames(request):
-    if ENV_COOKIE_NAME in request.COOKIES:
-        cookie = request.COOKIES[ENV_COOKIE_NAME]
-        return cookie.split(',')
-    else:
+    if ENV_COOKIE_NAME not in request.COOKIES:
         return None
+    cookie = request.COOKIES[ENV_COOKIE_NAME]
+    return cookie.split(',')
 
 
 def get_recent_envs(request):
@@ -323,10 +321,10 @@ class EnvLandingView(View):
         groups = environs_helper.get_env_capacity(request, name, stage, capacity_type="GROUP")
         metrics = environs_helper.get_env_metrics_config(request, name, stage)
 
-        metrics_dashboard_only = False
-        for metric in metrics:
-            if metric['title'] == "dashboard" and len(metrics) == 1:
-                metrics_dashboard_only = True
+        metrics_dashboard_only = any(
+            metric['title'] == "dashboard" and len(metrics) == 1
+            for metric in metrics
+        )
 
         alarms = environs_helper.get_env_alarms_config(request, name, stage)
         env_tag = tags_helper.get_latest_by_target_id(request, env['id'])
@@ -334,27 +332,39 @@ class EnvLandingView(View):
         capacity_info = {'groups': groups}
 
         project_name_is_default = False
-        stage_with_external_id = None
         existing_stage_identifier = None
-        for env_stage in envs:
-            if env_stage['externalId'] is not None and env_stage['stageName'] == stage:
-                stage_with_external_id = env_stage
-                break
+        stage_with_external_id = next(
+            (
+                env_stage
+                for env_stage in envs
+                if env_stage['externalId'] is not None
+                and env_stage['stageName'] == stage
+            ),
+            None,
+        )
 
-        project_info = dict()
-        project_info['project_name'] = None
-        project_info['project_url'] = None
-        project_info['project_valid'] = False
+        project_info = {
+            'project_name': None,
+            'project_url': None,
+            'project_valid': False,
+        }
+
         if stage_with_external_id is not None and stage_with_external_id['externalId'] is not None:
             try:
                 existing_stage_identifier = environs_helper.get_nimbus_identifier(request, stage_with_external_id['externalId'])
-                project_name_is_default = True if existing_stage_identifier is not None and existing_stage_identifier['projectName'] == "default" else False
+                project_name_is_default = (
+                    existing_stage_identifier is not None
+                    and existing_stage_identifier['projectName'] == "default"
+                )
+
                 project_info['project_valid'] = True
             except TeletraanException as detail:
-                log.error('Handling TeletraanException when trying to access nimbus API, error message {}'.format(detail))
+                log.error(
+                    f'Handling TeletraanException when trying to access nimbus API, error message {detail}'
+                )
+
         if existing_stage_identifier:
-            project_name = existing_stage_identifier.get('projectName', None)
-            if project_name:
+            if project_name := existing_stage_identifier.get('projectName', None):
                 project_info['project_name'] = project_name
                 project_info['project_url'] = environs_helper.get_nimbus_project_console_url(project_name)
 
@@ -437,8 +447,7 @@ class EnvLandingView(View):
                 "project_name_is_default": project_name_is_default,
                 "project_info": project_info,
             }
-            sortByTag = request.GET.get('sortByTag', None)
-            if sortByTag:
+            if sortByTag := request.GET.get('sortByTag', None):
                 report.sortByTag = sortByTag
                 context["host_tag_infos"] = environ_hosts_helper.get_host_tags(request, name, stage, sortByTag)
             response = render(request, 'environs/env_landing.html', context)
@@ -475,7 +484,7 @@ def _convert_time(date_str, time_str):
     # We use pacific time by default
     if not time_str:
         time_str = "00:00:00"
-    datestr = "%s %s -08:00" % (date_str, time_str)
+    datestr = f"{date_str} {time_str} -08:00"
     dt = parse(datestr)
     return calendar.timegm(dt.utctimetuple()) * 1000
 
@@ -487,9 +496,7 @@ def _convert_2_timestamp(date_str):
 
 
 def _get_commit_info(request, commit, repo=None, branch='master'):
-    # We try teletraan for commit info first, if not found, try backend
-    builds = builds_helper.get_builds(request, commit=commit)
-    if builds:
+    if builds := builds_helper.get_builds(request, commit=commit):
         build = builds[0]
         return build['repo'], build['branch'], build['commitDate']
 

@@ -42,15 +42,17 @@ class S3DownloadHelper(DownloadHelper):
 
     def download(self, local_full_fn):
         s3url_parse = re.match(self._s3_matcher, self._url)
-        bucket_name = s3url_parse.group("BUCKET")
-        key = s3url_parse.group("KEY")
-        log.info("Start to download file {} from s3 bucket {} to {}".format(
-            key, bucket_name, local_full_fn))
+        bucket_name = s3url_parse["BUCKET"]
+        key = s3url_parse["KEY"]
+        log.info(
+            f"Start to download file {key} from s3 bucket {bucket_name} to {local_full_fn}"
+        )
+
 
         try:
             filekey = self._aws_connection.get_bucket(bucket_name).get_key(key)
             if filekey is None:
-                log.error("s3 key {} not found".format(key))
+                log.error(f"s3 key {key} not found")
                 return Status.FAILED
 
             filekey.get_contents_to_filename(local_full_fn)
@@ -58,7 +60,7 @@ class S3DownloadHelper(DownloadHelper):
             if "-" not in etag:
                 if etag.startswith('"') and etag.endswith('"'):
                     etag = etag[1:-1]
-            
+
                 md5 = self.md5_file(local_full_fn)
                 if md5 != etag:
                     log.error("MD5 verification failed. tarball is corrupt.")
@@ -66,8 +68,8 @@ class S3DownloadHelper(DownloadHelper):
             else:
                 log.info("MD5 verification currently not supported on multipart uploads.")
 
-            log.info("Successfully downloaded to {}".format(local_full_fn))
+            log.info(f"Successfully downloaded to {local_full_fn}")
             return Status.SUCCEEDED
         except Exception:
-            log.error("Failed to get package from s3: {}".format(traceback.format_exc()))
+            log.error(f"Failed to get package from s3: {traceback.format_exc()}")
             return Status.FAILED

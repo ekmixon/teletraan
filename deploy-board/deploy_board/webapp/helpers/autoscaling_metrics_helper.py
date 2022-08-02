@@ -23,8 +23,12 @@ rodimus_client = RodimusClient()
 def get_asg_size_metric(request, cluster_name, start):
     params = {"start": start}
     try:
-        return rodimus_client.get("/metrics/clusters/%s/size" % cluster_name, request.teletraan_user_id.token,
-                                  params=params)
+        return rodimus_client.get(
+            f"/metrics/clusters/{cluster_name}/size",
+            request.teletraan_user_id.token,
+            params=params,
+        )
+
     except:
         return []
 
@@ -32,7 +36,12 @@ def get_asg_size_metric(request, cluster_name, start):
 def get_metric_data(request, cluster_name, metric_name, start):
     params = {"metricName": metric_name, "start": start}
     try:
-        return rodimus_client.get("/metrics/clusters/%s" % cluster_name, request.teletraan_user_id.token, params=params)
+        return rodimus_client.get(
+            f"/metrics/clusters/{cluster_name}",
+            request.teletraan_user_id.token,
+            params=params,
+        )
+
     except:
         return []
 

@@ -24,8 +24,7 @@ from deploy_board.webapp.helpers import environs_helper, builds_helper, systems_
     deploys_helper, agents_helper
 from deploy_board.webapp.common import UserIdentity
 
-token = os.environ.get("TELETRAAN_TEST_TOKEN")
-if token:
+if token := os.environ.get("TELETRAAN_TEST_TOKEN"):
     USER = UserIdentity(name="tester", token=token)
 else:
     USER = UserIdentity(name="anonymous")
@@ -38,27 +37,24 @@ def gen_random_num(size=8, chars=string.digits):
 
 
 def create_env(name, stage):
+    request = {"envName": name, "stageName": stage, "stageType": "DEFAULT"}
     request = {}
-    request["envName"] = name
-    request["stageName"] = stage
-    request["stageType"]= "DEFAULT"
-    env = environs_helper.create_env(REQUEST, request)
-    print "Successfully created env %s." % env['id']
-    return env
+    return environs_helper.create_env(REQUEST, request)
 
 
 def publish_build(build_name, branch='master', commit=gen_random_num(32)):
+    request = {
+        'name': build_name,
+        'repo': "sample-repo",
+        'branch': branch,
+        'commit': commit,
+        'commitDate': int(round(time.time() * 1000)),
+        'artifactUrl': "https://sample.com",
+        'publishInfo': "https://sample.com",
+    }
+
     request = {}
-    request['name'] = build_name
-    request['repo'] = "sample-repo"
-    request['branch'] = branch
-    request['commit'] = commit
-    request['commitDate'] = int(round(time.time() * 1000))
-    request['artifactUrl'] = "https://sample.com"
-    request['publishInfo'] = "https://sample.com"
-    build = builds_helper.publish_build(REQUEST, request)
-    print "Successfully published build %s." % build['id']
-    return build
+    return builds_helper.publish_build(REQUEST, request)
 
 
 def get_environ_helper():

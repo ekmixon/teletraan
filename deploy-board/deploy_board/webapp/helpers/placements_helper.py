@@ -30,9 +30,16 @@ def get_all(request, index, size):
 
 def get_by_provider_and_cell_name(request, provider, cell_name):
     if cell_name:
-        return rodimus_client.get("/placements/cell/%s" % cell_name, request.teletraan_user_id.token)
-    return rodimus_client.get("/placements/provider/%s" % provider, request.teletraan_user_id.token)
+        return rodimus_client.get(
+            f"/placements/cell/{cell_name}", request.teletraan_user_id.token
+        )
+
+    return rodimus_client.get(
+        f"/placements/provider/{provider}", request.teletraan_user_id.token
+    )
 
 
 def get_by_id(request, placement_id):
-    return rodimus_client.get("/placements/%s" % placement_id, request.teletraan_user_id.token)
+    return rodimus_client.get(
+        f"/placements/{placement_id}", request.teletraan_user_id.token
+    )

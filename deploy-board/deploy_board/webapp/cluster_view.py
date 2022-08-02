@@ -72,14 +72,19 @@ class EnvCapacityBasicCreateView(View):
     def post(self, request, name, stage):
         log.info("Post to capacity with data {0}".format(request.body))
         try:
-            cluster_name = '{}-{}'.format(name, stage)
+            cluster_name = f'{name}-{stage}'
             cluster_info = json.loads(request.body)
 
             log.info("Create Capacity in the provider")
-            if 'configs' in cluster_info:
-                if 'spiffe_id' in cluster_info['configs']:
-                    log.error("Teletraan does not support user to change spiffe_id %s"  % cluster_info['spiffe_id'])
-                    raise TeletraanException("Teletraan does not support user to create spiffe_id")
+            if (
+                'configs' in cluster_info
+                and 'spiffe_id' in cluster_info['configs']
+            ):
+                log.error(
+                    f"Teletraan does not support user to change spiffe_id {cluster_info['spiffe_id']}"
+                )
+
+                raise TeletraanException("Teletraan does not support user to create spiffe_id")
 
             clusters_helper.create_cluster_with_env(request, cluster_name, name, stage, cluster_info)
 
@@ -94,10 +99,10 @@ class EnvCapacityBasicCreateView(View):
                 request, name, stage, capacity_type="GROUP", data=cluster_name)
             return HttpResponse("{}", content_type="application/json")
         except NotAuthorizedException as e:
-            log.error("Have an NotAuthorizedException error {}".format(e))
+            log.error(f"Have an NotAuthorizedException error {e}")
             return HttpResponse(e, status=403, content_type="application/json")
         except Exception as e:
-            log.error("Have an error {}".format(e))
+            log.error(f"Have an error {e}")
             return HttpResponse(e, status=500, content_type="application/json")
 
 
@@ -148,7 +153,7 @@ class EnvCapacityAdvCreateView(View):
     def post(self, request, name, stage):
         log.info("Post to capacity with data {0}".format(request.body))
         try:
-            cluster_name = '{}-{}'.format(name, stage)
+            cluster_name = f'{name}-{stage}'
             cluster_info = json.loads(request.body)
 
             log.info("Create Capacity in the provider")
@@ -166,7 +171,7 @@ class EnvCapacityAdvCreateView(View):
 
             return HttpResponse("{}", content_type="application/json")
         except NotAuthorizedException as e:
-            log.error("Have an NotAuthorizedException error {}".format(e))
+            log.error(f"Have an NotAuthorizedException error {e}")
             return HttpResponse(e, status=403, content_type="application/json")
         except Exception as e:
             log.error("Have an error {}", e)
@@ -176,7 +181,7 @@ class EnvCapacityAdvCreateView(View):
 class ClusterConfigurationView(View):
     def get(self, request, name, stage):
 
-        cluster_name = '{}-{}'.format(name, stage)
+        cluster_name = f'{name}-{stage}'
         current_cluster = clusters_helper.get_cluster(request, cluster_name)
         host_types = hosttypes_helper.get_by_provider(
             request, DEFAULT_PROVIDER)
@@ -229,23 +234,33 @@ class ClusterConfigurationView(View):
             cluster_info = json.loads(request.body)
             log.info("Update Cluster Configuration with {}", cluster_info)
 
-            cluster_name = '{}-{}'.format(name, stage)
+            cluster_name = f'{name}-{stage}'
             current_cluster = clusters_helper.get_cluster(request, cluster_name)
             log.info("getting current Cluster Configuration is {}", current_cluster)
             if 'configs' in current_cluster and 'configs' in cluster_info:
-                if 'spiffe_id' in current_cluster['configs'] and 'spiffe_id' in cluster_info['configs']:
-                    if current_cluster['configs']['spiffe_id'] != cluster_info['configs']['spiffe_id']:
-                       log.error("Teletraan does not support user to update spiffe_id %s" % cluster_info['spiffe_id'])
-                       raise TeletraanException("Teletraan does not support user to update spiffe_id")
+                if (
+                    'spiffe_id' in current_cluster['configs']
+                    and 'spiffe_id' in cluster_info['configs']
+                    and current_cluster['configs']['spiffe_id']
+                    != cluster_info['configs']['spiffe_id']
+                ):
+                    log.error(
+                        f"Teletraan does not support user to update spiffe_id {cluster_info['spiffe_id']}"
+                    )
+
+                    raise TeletraanException("Teletraan does not support user to update spiffe_id")
 
                 if 'spiffe_id' in current_cluster['configs'] and 'spiffe_id' not in cluster_info['configs']:
-                    log.error("Teletraan does not support user to remove spiffe_id %s" % cluster_info['spiffe_id'])
+                    log.error(
+                        f"Teletraan does not support user to remove spiffe_id {cluster_info['spiffe_id']}"
+                    )
+
                     raise TeletraanException("Teletraan does not support user to remove spiffe_id")
 
             image = baseimages_helper.get_by_id(request, cluster_info['baseImageId'])
             clusters_helper.update_cluster(request, cluster_name, cluster_info)
         except NotAuthorizedException as e:
-            log.error("Have an NotAuthorizedException error {}".format(e))
+            log.error(f"Have an NotAuthorizedException error {e}")
             return HttpResponse(e, status=403, content_type="application/json")
         except Exception as e:
             log.error("Post to cluster configuration view has an error {}", e)
@@ -255,10 +270,10 @@ class ClusterConfigurationView(View):
 
 class ClusterCapacityUpdateView(View):
     def post(self, request, name, stage):
-        log.info("Update Cluster Capacity with data {}".format(request.body))
+        log.info(f"Update Cluster Capacity with data {request.body}")
         try:
             settings = json.loads(request.body)
-            cluster_name = '{}-{}'.format(name, stage)
+            cluster_name = f'{name}-{stage}'
             log.info("Update cluster {0} with {1}".format(
                 cluster_name, settings))
             minSize = int(settings['minsize'])
@@ -266,7 +281,7 @@ class ClusterCapacityUpdateView(View):
             clusters_helper.update_cluster_capacity(
                 request, cluster_name, minSize, maxSize)
         except NotAuthorizedException as e:
-            log.error("Have an NotAuthorizedException error {}".format(e))
+            log.error(f"Have an NotAuthorizedException error {e}")
             return HttpResponse(e, status=403, content_type="application/json")
         except Exception as e:
             log.error("Post to cluster capacity view has an error {}", e)
@@ -276,16 +291,15 @@ class ClusterCapacityUpdateView(View):
 
 def create_base_image(request):
     params = request.POST
-    base_image_info = {}
-    base_image_info['abstract_name'] = params['abstractName']
-    base_image_info['provider_name'] = params['providerName']
-    base_image_info['provider'] = params['provider']
-    base_image_info['description'] = params['description']
-    base_image_info['cell_name'] = params['cellName']
-    if 'basic' in params:
-        base_image_info['basic'] = True
-    else:
-        base_image_info['basic'] = False
+    base_image_info = {
+        'abstract_name': params['abstractName'],
+        'provider_name': params['providerName'],
+        'provider': params['provider'],
+        'description': params['description'],
+        'cell_name': params['cellName'],
+        'basic': 'basic' in params,
+    }
+
     baseimages_helper.create_base_image(request, base_image_info)
     return redirect('/clouds/baseimages')
 
@@ -376,23 +390,21 @@ def get_base_images_by_name(request):
 
 
 def get_base_image_info_by_name(request, name, cell):
-    if name.startswith('cmp_base'):
-        base_images = baseimages_helper.get_acceptance_by_name(request, name, cell)
-        with_acceptance_rs = []
-        if base_images:
-            for image in base_images:
-                r = image.get('baseImage')
-                if r:
-                    r['acceptance'] = image.get('acceptance', 'UNKNOWN')
-                    with_acceptance_rs.append(r)
-        return with_acceptance_rs
-    return baseimages_helper.get_by_name(request, name, cell)
+    if not name.startswith('cmp_base'):
+        return baseimages_helper.get_by_name(request, name, cell)
+    base_images = baseimages_helper.get_acceptance_by_name(request, name, cell)
+    with_acceptance_rs = []
+    if base_images:
+        for image in base_images:
+            if r := image.get('baseImage'):
+                r['acceptance'] = image.get('acceptance', 'UNKNOWN')
+                with_acceptance_rs.append(r)
+    return with_acceptance_rs
 
 
 def get_base_images_by_name_json(request, name):
     cell = DEFAULT_CELL
-    params = request.GET
-    if params:
+    if params := request.GET:
         cell = params.get('cell', DEFAULT_CELL)
     base_images = get_base_image_info_by_name(request, name, cell)
     return HttpResponse(json.dumps(base_images), content_type="application/json")
@@ -400,18 +412,17 @@ def get_base_images_by_name_json(request, name):
 
 def create_host_type(request):
     params = request.POST
-    host_type_info = {}
-    host_type_info['abstract_name'] = params['abstractName']
-    host_type_info['provider_name'] = params['providerName']
-    host_type_info['provider'] = params['provider']
-    host_type_info['description'] = params['description']
-    host_type_info['mem'] = float(params['mem']) * 1024
-    host_type_info['core'] = int(params['core'])
-    host_type_info['storage'] = params['storage']
-    if 'basic' in params:
-        host_type_info['basic'] = True
-    else:
-        host_type_info['basic'] = False
+    host_type_info = {
+        'abstract_name': params['abstractName'],
+        'provider_name': params['providerName'],
+        'provider': params['provider'],
+        'description': params['description'],
+        'mem': float(params['mem']) * 1024,
+        'core': int(params['core']),
+        'storage': params['storage'],
+        'basic': 'basic' in params,
+    }
+
     hosttypes_helper.create_host_type(request, host_type_info)
     return redirect('/clouds/hosttypes')
 
@@ -463,16 +474,15 @@ def get_host_type_info(request):
 
 def create_security_zone(request):
     params = request.POST
-    security_zone_info = {}
-    security_zone_info['abstract_name'] = params['abstractName']
-    security_zone_info['provider_name'] = params['providerName']
-    security_zone_info['provider'] = params['provider']
-    security_zone_info['description'] = params['description']
-    security_zone_info['cell_name'] = params.get('cellName', DEFAULT_CELL)
-    if 'basic' in params:
-        security_zone_info['basic'] = True
-    else:
-        security_zone_info['basic'] = False
+    security_zone_info = {
+        'abstract_name': params['abstractName'],
+        'provider_name': params['providerName'],
+        'provider': params['provider'],
+        'description': params['description'],
+        'cell_name': params.get('cellName', DEFAULT_CELL),
+    }
+
+    security_zone_info['basic'] = 'basic' in params
     securityzones_helper.create_security_zone(request, security_zone_info)
     return redirect('/clouds/securityzones')
 
@@ -520,16 +530,15 @@ def get_security_zone_info(request):
 
 def create_placement(request):
     params = request.POST
-    placement_info = {}
-    placement_info['abstract_name'] = params['abstractName']
-    placement_info['provider_name'] = params['providerName']
-    placement_info['provider'] = params['provider']
-    placement_info['description'] = params['description']
-    placement_info['cell_name'] = params.get('cellName', DEFAULT_CELL)
-    if 'basic' in params:
-        placement_info['basic'] = True
-    else:
-        placement_info['basic'] = False
+    placement_info = {
+        'abstract_name': params['abstractName'],
+        'provider_name': params['providerName'],
+        'provider': params['provider'],
+        'description': params['description'],
+        'cell_name': params.get('cellName', DEFAULT_CELL),
+    }
+
+    placement_info['basic'] = 'basic' in params
     placements_helper.create_placement(request, placement_info)
     return redirect('/clouds/placements')
 
@@ -588,33 +597,29 @@ def parse_configs(query_dict):
 
 
 def get_default_cmp_configs(name, stage):
-    config_map = {}
-    config_map['iam_role'] = 'base'
-    config_map['cmp_group'] = 'CMP,{}-{}'.format(name, stage)
-    config_map['pinfo_environment'] = DEFAULT_CMP_PINFO_ENVIRON
-    config_map['pinfo_team'] = 'cloudeng'
-    config_map['pinfo_role'] = 'cmp_base'
-    config_map['access_role'] = DEFAULT_CMP_ACCESS_ROLE
-    return config_map
+    return {
+        'iam_role': 'base',
+        'cmp_group': f'CMP,{name}-{stage}',
+        'pinfo_environment': DEFAULT_CMP_PINFO_ENVIRON,
+        'pinfo_team': 'cloudeng',
+        'pinfo_role': 'cmp_base',
+        'access_role': DEFAULT_CMP_ACCESS_ROLE,
+    }
 
 
 def parse_cluster_info(request, env_name, env_stage, cluster_name):
     params = request.POST
-    cluster_info = {}
-    cluster_info['capacity'] = params['capacity']
-    cluster_info['baseImageId'] = params['baseImageId']
-    cluster_info['provider'] = params['provider']
-    cluster_info['hostType'] = params['hostTypeId']
-    cluster_info['securityZone'] = params['securityZoneId']
-    cluster_info['placement'] = ",".join(params.getlist('placementId'))
+    cluster_info = {
+        'capacity': params['capacity'],
+        'baseImageId': params['baseImageId'],
+        'provider': params['provider'],
+        'hostType': params['hostTypeId'],
+        'securityZone': params['securityZoneId'],
+        'placement': ",".join(params.getlist('placementId')),
+    }
 
     # Update cluster name and isDocker in env
-    env_info = {}
-    env_info['clusterName'] = cluster_name
-    if 'isDocker' in params:
-        env_info['isDocker'] = True
-    else:
-        env_info['isDocker'] = False
+    env_info = {'clusterName': cluster_name, 'isDocker': 'isDocker' in params}
     environs_helper.update_env_basic_config(
         request, env_name, env_stage, data=env_info)
     return cluster_info
@@ -622,23 +627,23 @@ def parse_cluster_info(request, env_name, env_stage, cluster_name):
 
 def delete_cluster(request, name, stage):
     cluster_name = common.get_cluster_name(request, name, stage)
-    log.info("Delete cluster {}".format(cluster_name))
+    log.info(f"Delete cluster {cluster_name}")
     clusters_helper.delete_cluster(request, cluster_name)
 
     # Remove group and env relationship
     environs_helper.remove_env_capacity(
         request, name, stage, capacity_type="GROUP", data=cluster_name)
-    return redirect('/env/{}/{}/config/capacity/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/config/capacity/')
 
 
 def clone_cluster(request, src_name, src_stage):
     try:
         params = request.POST
         dest_name = params.get('new_environment', src_name)
-        dest_stage = params.get('new_stage', src_stage + '_clone')
+        dest_stage = params.get('new_stage', f'{src_stage}_clone')
 
-        src_cluster_name = '{}-{}'.format(src_name, src_stage)
-        dest_cluster_name = '{}-{}'.format(dest_name, dest_stage)
+        src_cluster_name = f'{src_name}-{src_stage}'
+        dest_cluster_name = f'{dest_name}-{dest_stage}'
 
         ##0. teletraan service get src env buildName
         src_env = environs_helper.get_env_by_stage(request, src_name, src_stage)
@@ -652,15 +657,13 @@ def clone_cluster(request, src_name, src_stage):
             'buildName': build_name,
             'externalId': external_id
         })
-        log.info('clone_cluster, created a new env %s' % dest_env)
+        log.info(f'clone_cluster, created a new env {dest_env}')
 
         ##2. rodimus service get src_cluster config
         src_cluster_info = clusters_helper.get_cluster(request, src_cluster_name)
-        log.info('clone_cluster, src cluster info %s' % src_cluster_info)
-        configs = src_cluster_info.get('configs')
-        if configs:
-            cmp_group = configs.get('cmp_group')
-            if cmp_group:
+        log.info(f'clone_cluster, src cluster info {src_cluster_info}')
+        if configs := src_cluster_info.get('configs'):
+            if cmp_group := configs.get('cmp_group'):
                 cmp_groups_set = set(cmp_group.split(','))
                 cmp_groups_set.remove(src_cluster_name)
                 cmp_groups_set.remove('CMP')
@@ -672,9 +675,9 @@ def clone_cluster(request, src_name, src_stage):
         ##3. rodimus service post create cluster
         src_cluster_info['clusterName'] = dest_cluster_name
         src_cluster_info['capacity'] = 0
-        log.info('clone_cluster, request clone cluster info %s' % src_cluster_info)
+        log.info(f'clone_cluster, request clone cluster info {src_cluster_info}')
         dest_cluster_info = clusters_helper.create_cluster_with_env(request, dest_cluster_name, dest_name, dest_stage, src_cluster_info)
-        log.info('clone_cluster, cloned cluster info %s' % dest_cluster_info)
+        log.info(f'clone_cluster, cloned cluster info {dest_cluster_info}')
 
         ##4. teletraan service update_env_basic_config
         environs_helper.update_env_basic_config(request, dest_name, dest_stage,
@@ -705,18 +708,19 @@ def clone_cluster(request, src_name, src_stage):
 
         return HttpResponse(json.dumps(src_cluster_info), content_type="application/json")
     except NotAuthorizedException as e:
-        log.error("Have an NotAuthorizedException error {}".format(e))
+        log.error(f"Have an NotAuthorizedException error {e}")
         return HttpResponse(e, status=403, content_type="application/json")
     except Exception as e:
-        log.error("Failed to clone cluster env_name: %s, stage_name: %s" % (src_name, src_stage))
+        log.error(
+            f"Failed to clone cluster env_name: {src_name}, stage_name: {src_stage}"
+        )
+
         log.error(traceback.format_exc())
         return HttpResponse(e, status=500, content_type="application/json")
 
 
 def get_aws_config_name_list_by_image(image_name):
-    config_map = {}
-    config_map['iam_role'] = 'base'
-    config_map['assign_public_ip'] = 'true'
+    config_map = {'iam_role': 'base', 'assign_public_ip': 'true'}
     if IS_PINTEREST:
         config_map['pinfo_environment'] = 'prod'
         config_map['raid'] = 'true'
@@ -742,7 +746,7 @@ def launch_hosts(request, name, stage):
     num = int(params['num'])
     cluster_name = common.get_cluster_name(request, name, stage)
     clusters_helper.launch_hosts(request, cluster_name, num)
-    return redirect('/env/{}/{}/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/')
 
 
 def terminate_hosts(request, name, stage):
@@ -756,7 +760,7 @@ def terminate_hosts(request, name, stage):
         hosts_str = post_params['hostIds']
         host_ids = [x.strip() for x in hosts_str.split(',')]
     environ_hosts_helper.stop_service_on_host(request, name, stage, host_ids)
-    return redirect('/env/{}/{}'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}')
 
 
 def force_terminate_hosts(request, name, stage):
@@ -770,11 +774,7 @@ def force_terminate_hosts(request, name, stage):
         hosts_str = post_params['hostIds']
         host_ids = [x.strip() for x in hosts_str.split(',')]
 
-    if 'replaceHost' in post_params:
-        replace_host = True
-    else:
-        replace_host = False
-
+    replace_host = 'replaceHost' in post_params
     cluster_name = common.get_cluster_name(request, name, stage)
     if not cluster_name:
         groups = environs_helper.get_env_capacity(
@@ -783,31 +783,31 @@ def force_terminate_hosts(request, name, stage):
             cluster_name = group_name
     clusters_helper.force_terminate_hosts(
         request, cluster_name, host_ids, replace_host)
-    return redirect('/env/{}/{}'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}')
 
 
 def enable_cluster_replacement(request, name, stage):
     cluster_name = common.get_cluster_name(request, name, stage)
     clusters_helper.enable_cluster_replacement(request, cluster_name)
-    return redirect('/env/{}/{}/config/capacity/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/config/capacity/')
 
 
 def pause_cluster_replacement(request, name, stage):
     cluster_name = common.get_cluster_name(request, name, stage)
     clusters_helper.pause_cluster_replacement(request, cluster_name)
-    return redirect('/env/{}/{}/config/capacity/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/config/capacity/')
 
 
 def resume_cluster_replacement(request, name, stage):
     cluster_name = common.get_cluster_name(request, name, stage)
     clusters_helper.resume_cluster_replacement(request, cluster_name)
-    return redirect('/env/{}/{}/config/capacity/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/config/capacity/')
 
 
 def cancel_cluster_replacement(request, name, stage):
     cluster_name = common.get_cluster_name(request, name, stage)
     clusters_helper.cancel_cluster_replacement(request, cluster_name)
-    return redirect('/env/{}/{}/config/capacity/'.format(name, stage))
+    return redirect(f'/env/{name}/{stage}/config/capacity/')
 
 
 def get_replacement_summary(request, cluster_name, event, current_capacity):
@@ -816,14 +816,11 @@ def get_replacement_summary(request, cluster_name, event, current_capacity):
     status = event.get('status')
     progress_type = 'success' if status in [
         'SUCCEEDING', 'SUCCEEDED'] else 'danger'
-    if not host_ids:
-        num_finished_host_ids = 0
-    else:
-        num_finished_host_ids = len(host_ids.split(','))
+    num_finished_host_ids = len(host_ids.split(',')) if host_ids else 0
     if state == 'COMPLETED':
+        # successful
+        succeeded = num_finished_host_ids
         if status == 'SUCCEEDED':
-            # successful
-            succeeded = num_finished_host_ids
             progress_rate = 100
             msg = event.get('error_message', '')
             return {
@@ -833,15 +830,13 @@ def get_replacement_summary(request, cluster_name, event, current_capacity):
                 'startDate': event.get('start_time'),
                 'lastUpdateDate': event.get('last_worked_on'),
                 'progressType': progress_type,
-                'progressTip': 'Among total {} hosts, {} successfully replaced and {} are pending'.format(
-                    succeeded, succeeded, 0),
+                'progressTip': f'Among total {succeeded} hosts, {succeeded} successfully replaced and 0 are pending',
                 'successRatePercentage': progress_rate,
-                'successRate': '{}% ({}/{})'.format(progress_rate, succeeded, succeeded),
-                'description': msg
+                'successRate': f'{progress_rate}% ({succeeded}/{succeeded})',
+                'description': msg,
             }
+
         else:
-            # failed
-            succeeded = num_finished_host_ids
             progress_rate = succeeded * 100 / current_capacity
             msg = event.get('error_message', '')
             return {
@@ -851,12 +846,12 @@ def get_replacement_summary(request, cluster_name, event, current_capacity):
                 'startDate': event.get('start_time'),
                 'lastUpdateDate': event.get('last_worked_on'),
                 'progressType': progress_type,
-                'progressTip': 'Among total {} hosts, {} successfully replaced and {} are pending. Reason: {}'.format(
-                    current_capacity, succeeded, current_capacity - succeeded, msg),
+                'progressTip': f'Among total {current_capacity} hosts, {succeeded} successfully replaced and {current_capacity - succeeded} are pending. Reason: {msg}',
                 'successRatePercentage': progress_rate,
-                'successRate': '{}% ({}/{})'.format(progress_rate, succeeded, current_capacity),
-                'description': msg
+                'successRate': f'{progress_rate}% ({succeeded}/{current_capacity})',
+                'description': msg,
             }
+
 
     else:
         # on-going event
@@ -873,34 +868,30 @@ def get_replacement_summary(request, cluster_name, event, current_capacity):
             'startDate': event.get('start_time'),
             'lastUpdateDate': event.get('last_worked_on'),
             'progressType': progress_type,
-            'progressTip': 'Among total {} hosts, {} successfully replaced and {} are pending. {}'.format(
-                current_capacity, succeeded, current_capacity - succeeded, on_going_msg),
+            'progressTip': f'Among total {current_capacity} hosts, {succeeded} successfully replaced and {current_capacity - succeeded} are pending. {on_going_msg}',
             'successRatePercentage': progress_rate,
-            'successRate': '{}% ({}/{})'.format(progress_rate, succeeded, current_capacity)
+            'successRate': f'{progress_rate}% ({succeeded}/{current_capacity})',
         }
 
 
 def cluster_replacement_progress(request, name, stage):
     env = environs_helper.get_env_by_stage(request, name, stage)
 
-    cluster_name = '{}-{}'.format(name, stage)
+    cluster_name = f'{name}-{stage}'
     replacement_event = clusters_helper.get_latest_cluster_replacement_progress(
         request, cluster_name)
     if not replacement_event:
-        log.info("There is no on-going replacement event for cluster %s." %
-                 cluster_name)
+        log.info(f"There is no on-going replacement event for cluster {cluster_name}.")
         return HttpResponse("There is no on-going replacement.")
 
     # basic_cluster_info = clusters_helper.get_cluster(request, cluster_name)
     # capacity = basic_cluster_info.get("capacity")
     # should not respect the cluster capacity here, when min != max, the capacity is not a right number
     asg_summary = autoscaling_groups_helper.get_autoscaling_summary(request, cluster_name)
-    desired_capacity = None
-    if asg_summary:
-        desired_capacity = asg_summary.get("desiredCapacity")
+    desired_capacity = asg_summary.get("desiredCapacity") if asg_summary else None
     if not desired_capacity:
-        error_msg = "cluster %s has wrong desired_capacity: %s, asg_summary: %s" % \
-                    (cluster_name, desired_capacity, asg_summary)
+        error_msg = f"cluster {cluster_name} has wrong desired_capacity: {desired_capacity}, asg_summary: {asg_summary}"
+
         log.error(error_msg)
         return HttpResponse(error_msg, status=500, content_type="application/json")
 
@@ -911,22 +902,25 @@ def cluster_replacement_progress(request, name, stage):
         "env": env,
         "replace_progress_report": replacement_progress
     })
-    response = HttpResponse(html)
-    return response
+    return HttpResponse(html)
 
 
 def cluster_replacement_details(request, name, stage):
-    cluster_name = '{}-{}'.format(name, stage)
+    cluster_name = f'{name}-{stage}'
     replacement_event = clusters_helper.get_latest_cluster_replacement_progress(
         request, cluster_name)
-    if not replacement_event:
-        return HttpResponse("{}", content_type="application/json")
-    return HttpResponse(json.dumps(replacement_event), content_type="application/json")
+    return (
+        HttpResponse(
+            json.dumps(replacement_event), content_type="application/json"
+        )
+        if replacement_event
+        else HttpResponse("{}", content_type="application/json")
+    )
 
 
 def view_cluster_replacement_details(request, name, stage, replacement_id):
     env = environs_helper.get_env_by_stage(request, name, stage)
-    cluster_name = '{}-{}'.format(name, stage)
+    cluster_name = f'{name}-{stage}'
 
     replacement_event = clusters_helper.get_cluster_replacement_info(
         request, cluster_name, replacement_id)
@@ -947,7 +941,7 @@ def view_cluster_replacement_details(request, name, stage, replacement_id):
 
 
 def view_cluster_replacement_scaling_activities(request, name, stage):
-    cluster_name = '{}-{}'.format(name, stage)
+    cluster_name = f'{name}-{stage}'
     scaling_activities = autoscaling_groups_helper.get_scaling_activities(
         request, cluster_name, 20, '')
     activities = json.dumps(scaling_activities["activities"])
@@ -956,7 +950,7 @@ def view_cluster_replacement_scaling_activities(request, name, stage):
 
 def view_cluster_replacement_schedule(request, name, stage, replacement_id):
     env = environs_helper.get_env_by_stage(request, name, stage)
-    cluster_name = '{}-{}'.format(name, stage)
+    cluster_name = f'{name}-{stage}'
     schedule = clusters_helper.get_cluster_replacement_schedule(
         request, cluster_name, replacement_id)
     return render(request, 'clusters/replace_schedule.html', {
@@ -969,7 +963,7 @@ class ClusterHistoriesView(View):
     def get(self, request, name, stage):
         env = environs_helper.get_env_by_stage(request, name, stage)
 
-        cluster_name = '{}-{}'.format(name, stage)
+        cluster_name = f'{name}-{stage}'
         page_index = request.GET.get('index')
         page_size = request.GET.get('size')
         histories = clusters_helper.get_cluster_replacement_histories(
@@ -981,9 +975,10 @@ class ClusterHistoriesView(View):
                 request, cluster_name)
             capacity = basic_cluster_info.get("capacity")
 
-            for history in histories:
-                replace_summaries.append(get_replacement_summary(
-                    request, cluster_name, history, capacity))
+            replace_summaries.extend(
+                get_replacement_summary(request, cluster_name, history, capacity)
+                for history in histories
+            )
 
         data = {
             "env": env,

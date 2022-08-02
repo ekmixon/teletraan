@@ -49,10 +49,10 @@ class TestServerlessClient(tests.TestCase):
 
         deployStages = ['PRE_DOWNLOAD', 'DOWNLOADING', 'POST_DOWNLOAD', 'STAGING', 'PRE_RESTART', 'RESTARTING', 'POST_RESTART', 'SERVING_BUILD']
 
-        for i in range(0, len(deployStages)):
-            response = self.client.send_reports(env_status) 
+        for deployStage in deployStages:
+            response = self.client.send_reports(env_status)
             self.assertEqual(response.opCode, "DEPLOY")
-            self.assertEqual(response.deployGoal.deployStage, deployStages[i])
+            self.assertEqual(response.deployGoal.deployStage, deployStage)
             report.deployStage = response.deployGoal.deployStage
             report.deployId = response.deployGoal.deployId
 

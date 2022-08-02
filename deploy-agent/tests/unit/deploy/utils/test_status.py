@@ -28,24 +28,28 @@ class TestStatusFunction(tests.TestCase):
         fn = tempfile.mkstemp()[1]
         env_status = EnvStatus(fn)
         status1 = DeployStatus()
-        ping_report = {}
-        ping_report['deployId'] = 'deploy1'
-        ping_report['envId'] = 'envId1'
-        ping_report['envName'] = 'env1'
-        ping_report['stageName'] = 'beta'
-        ping_report['deployStage'] = DeployStage.POST_RESTART
-        ping_report['status'] = AgentStatus.AGENT_FAILED
-        ping_report['errorCode'] = 1
-        ping_report['errorMessage'] = 'Fail to open files'
+        ping_report = {
+            'deployId': 'deploy1',
+            'envId': 'envId1',
+            'envName': 'env1',
+            'stageName': 'beta',
+            'deployStage': DeployStage.POST_RESTART,
+            'status': AgentStatus.AGENT_FAILED,
+            'errorCode': 1,
+            'errorMessage': 'Fail to open files',
+        }
+
         status1.report = PingReport(jsonValue=ping_report)
         status1.build_info = BuildInfo(commit='abc', build_url='http://google.com', build_id='234')
 
         status2 = DeployStatus()
-        ping_report = {}
-        ping_report['deployId'] = 'deploy2'
-        ping_report['envId'] = 'envId2'
-        ping_report['envName'] = 'env2'
-        ping_report['stageName'] = 'prod'
+        ping_report = {
+            'deployId': 'deploy2',
+            'envId': 'envId2',
+            'envName': 'env2',
+            'stageName': 'prod',
+        }
+
         ping_report['deployStage'] = DeployStage.SERVING_BUILD
         ping_report['status'] = AgentStatus.SUCCEEDED
         status2.report = PingReport(jsonValue=ping_report)

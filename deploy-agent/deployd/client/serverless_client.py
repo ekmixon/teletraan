@@ -51,9 +51,9 @@ class ServerlessClient(BaseClient):
         for report in reports:
             if report.envName != self._env_name:
                 continue
-            self._env_id = report.envId 
+            self._env_id = report.envId
             ping_response = self._create_response(report)
-            log.info('%s -> %s' % (reports, ping_response))
+            log.info(f'{reports} -> {ping_response}')
 
             return ping_response
 

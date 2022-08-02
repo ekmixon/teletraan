@@ -36,7 +36,7 @@ class Transformer(object):
 
     def _load_config(self, fn):
         if not fn:
-            fn = os.path.join(self._agent_dir, "{}_SCRIPT_CONFIG".format(self._env_name))
+            fn = os.path.join(self._agent_dir, f"{self._env_name}_SCRIPT_CONFIG")
 
         if not os.path.isfile(fn):
             self._dictionary = {}
@@ -70,8 +70,9 @@ class Transformer(object):
             with open(to_path, 'w') as f:
                 f.write(res)
         except:
-            log.error('Fail to translate script {}, stacktrace: {}'.format(from_path,
-                                                                           traceback.format_exc()))
+            log.error(
+                f'Fail to translate script {from_path}, stacktrace: {traceback.format_exc()}'
+            )
 
     def transform_scripts(self, script_dir, template_dirname, script_dirname):
         scripts = []
@@ -86,10 +87,10 @@ class Transformer(object):
 
                         if os.path.isfile(from_path):  # We only care about files
                             self._translate(from_path, to_path)
-                            log.info('finish translating: {} to {}'.format(from_path, to_path))
+                            log.info(f'finish translating: {from_path} to {to_path}')
         except OSError:
             # if scripts_dir doesn't exist, there is no local build,
             # go on and return empty list.
-            log.debug("OSError: {} does not exist.".format(script_dir))
+            log.debug(f"OSError: {script_dir} does not exist.")
         finally:
             return scripts

@@ -28,7 +28,7 @@ class SingleInstance(object):
     def __init__(self):
         # Establish lock file settings
         appname = 'deploy-agent'
-        lockfile_name = '.{}.lock'.format(appname)
+        lockfile_name = f'.{appname}.lock'
         lockfile_path = os.path.join(tempfile.gettempdir(), lockfile_name)
         lockfile_flags = os.O_WRONLY | os.O_CREAT
         # This is 0o222, i.e. 146, --w--w--w-

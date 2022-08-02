@@ -37,24 +37,17 @@ def _get_running_deploys_count(request):
 def _get_sidecars(request):
     # returns a list of env id for sidecars which are identified by having a system priority
     envs = environs_helper.get_all_sidecar_envs(request)
-    env_ids = []
-    for env in envs:
-        env_ids.append(env['id'])
-    return env_ids
+    return [env['id'] for env in envs]
 
 def _get_ongoing_sidecar_deploys(request):
     deploy_summaries = []
-    env_ids = _get_sidecars(request)
-    if env_ids:
+    if env_ids := _get_sidecars(request):
         deploy_states = ["RUNNING", "FAILING"]
         deployResult = deploys_helper.get_all(request, envId=env_ids, deployState=deploy_states)
         for deploy in deployResult['deploys']:
             env = environs_helper.get(request, deploy['envId'])
             build = builds_helper.get_build(request, deploy['buildId'])
-            summary = {}
-            summary['deploy'] = deploy
-            summary['env'] = env
-            summary['build'] = build
+            summary = {'deploy': deploy, 'env': env, 'build': build}
             deploy_summaries.append(summary)
 
     return deploy_summaries
@@ -68,10 +61,7 @@ def _get_ongoing_deploys(request, index, size):
     for deploy in deployResult['deploys']:
         env = environs_helper.get(request, deploy['envId'])
         build = builds_helper.get_build(request, deploy['buildId'])
-        summary = {}
-        summary['deploy'] = deploy
-        summary['env'] = env
-        summary['build'] = build
+        summary = {'deploy': deploy, 'env': env, 'build': build}
         deploy_summaries.append(summary)
 
     return deploy_summaries
@@ -162,5 +152,5 @@ def inline_update(request):
     if name == "description":
         deploys_helper.update(request, deploy_id, {"description": value})
     else:
-        log.error("Unsupport deploy update on field " + name)
+        log.error(f"Unsupport deploy update on field {name}")
     return HttpResponse(json.dumps({'html': ''}), content_type="application/json")

@@ -32,12 +32,11 @@ def create(name, stage, x):
 
 
 def main():
+    stage = "canary"
     for x in xrange(2):
         name = "sample-service-%d" % x
-        stage = "canary"
         create(name, stage, x)
-        stage = "prod"
-        create(name, stage, x)
+        create(name, "prod", x)
 
 
 if __name__ == "__main__":

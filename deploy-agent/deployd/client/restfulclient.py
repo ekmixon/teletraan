@@ -35,16 +35,21 @@ class RestfulClient(object):
 
     def __call(self, method):
         def api(path, params=None, data=None):
-            url = '%s/%s%s' % (self.url_prefix, self.url_version, path)
+            url = f'{self.url_prefix}/{self.url_version}{path}'
             if self.token:
-                headers = {'Authorization': 'token %s' % self.token, 'Content-type': 'application/json'}
+                headers = {
+                    'Authorization': f'token {self.token}',
+                    'Content-type': 'application/json',
+                }
+
             else:
                 headers = {'Content-type': 'application/json'}
             response = getattr(requests, method)(url, headers=headers, params=params, json=data,
                                                  timeout=self.default_timeout, verify=self.verify)
 
             if response.status_code > 300:
-                msg = "Teletraan failed to call backend server. Hint: %s, %s" % (response.status_code, response.content)
+                msg = f"Teletraan failed to call backend server. Hint: {response.status_code}, {response.content}"
+
                 log.error(msg)
                 raise AgentException(msg)
 
@@ -60,6 +65,4 @@ class RestfulClient(object):
         # python object -> json
         response = self._ping_internal(ping_request.to_json())
 
-        # json -> python object
-        ping_response = PingResponse(jsonValue=response)
-        return ping_response
+        return PingResponse(jsonValue=response)

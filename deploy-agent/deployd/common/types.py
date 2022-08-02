@@ -93,10 +93,7 @@ class BuildInfo(object):
         self.build_branch = build_branch
 
     def __eq__(self, other):
-        if other:
-            return self.__dict__ == other.__dict__
-        else:
-            return False
+        return self.__dict__ == other.__dict__ if other else False
 
 
 class DeployStatus(object):
@@ -190,12 +187,9 @@ class DeployStatus(object):
         json = {}
         for key, value in self.__dict__.items():
             if type(value) is dict:
-                json[key] = {k: v for k, v in value.items()}
+                json[key] = dict(value.items())
             elif value:
-                if hasattr(value, "__dict__"):
-                    json[key] = value.__dict__
-                else:
-                    json[key] = value
+                json[key] = value.__dict__ if hasattr(value, "__dict__") else value
         return json
 
     def __str__(self):

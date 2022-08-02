@@ -84,7 +84,11 @@ def get_nimbus_project_console_url(project_name):
 
 
 def set_external_id_on_stage(request, env_name, stage_name, external_id):
-    return deployclient.post("/envs/{}/{}/external_id".format(env_name, stage_name), request.teletraan_user_id.token, data=external_id)
+    return deployclient.post(
+        f"/envs/{env_name}/{stage_name}/external_id",
+        request.teletraan_user_id.token,
+        data=external_id,
+    )
 
 
 def get_all_env_names(request, name_filter=None, name_only=True, index=1, size=DEFAULT_ENV_SIZE):
@@ -109,43 +113,60 @@ def get_all_sidecar_envs(request):
 
 
 def get(request, id):
-    return deployclient.get("/envs/%s" % id, request.teletraan_user_id.token)
+    return deployclient.get(f"/envs/{id}", request.teletraan_user_id.token)
 
 
 def get_env_by_stage(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s" % (env_name, stage_name), request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}", request.teletraan_user_id.token
+    )
 
 
 def get_env_capacity(request, env_name, stage_name, capacity_type=None):
     params = []
     if capacity_type:
         params.append(("capacityType", capacity_type))
-    return deployclient.get("/envs/%s/%s/capacity" % (env_name, stage_name),
-                            request.teletraan_user_id.token, params=params)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/capacity",
+        request.teletraan_user_id.token,
+        params=params,
+    )
 
 
 def update_env_capacity(request, env_name, stage_name, capacity_type=None, data=None):
     params = []
     if capacity_type:
         params.append(("capacityType", capacity_type))
-    return deployclient.put("/envs/%s/%s/capacity" % (env_name, stage_name),
-                            request.teletraan_user_id.token, params=params, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/capacity",
+        request.teletraan_user_id.token,
+        params=params,
+        data=data,
+    )
 
 
 def add_env_capacity(request, env_name, stage_name, capacity_type=None, data=None):
     params = []
     if capacity_type:
         params.append(("capacityType", capacity_type))
-    return deployclient.post("/envs/%s/%s/capacity" % (env_name, stage_name),
-                             request.teletraan_user_id.token, params=params, data=data)
+    return deployclient.post(
+        f"/envs/{env_name}/{stage_name}/capacity",
+        request.teletraan_user_id.token,
+        params=params,
+        data=data,
+    )
 
 
 def remove_env_capacity(request, env_name, stage_name, capacity_type=None, data=None):
     params = []
     if capacity_type:
         params.append(("capacityType", capacity_type))
-    return deployclient.delete("/envs/%s/%s/capacity" % (env_name, stage_name),
-                               request.teletraan_user_id.token, params=params, data=data)
+    return deployclient.delete(
+        f"/envs/{env_name}/{stage_name}/capacity",
+        request.teletraan_user_id.token,
+        params=params,
+        data=data,
+    )
 
 
 def create_env(request, data):
@@ -153,79 +174,116 @@ def create_env(request, data):
 
 
 def update_env_basic_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s" % (env_name, stage_name), request.teletraan_user_id.token,
-                            data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_script_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/script_configs" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/script_configs",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_script_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/script_configs" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/script_configs",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_agent_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/agent_configs" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/agent_configs",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_agent_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/agent_configs" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/agent_configs",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_alarms_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/alarms" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/alarms",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_alarms_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/alarms" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/alarms",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_metrics_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/metrics" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/metrics",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_metrics_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/metrics" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/metrics",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_hooks_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/web_hooks" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/web_hooks",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_hooks_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/web_hooks" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/web_hooks",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def get_env_promotes_config(request, env_name, stage_name):
-    return deployclient.get("/envs/%s/%s/promotes" % (env_name, stage_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/promotes",
+        request.teletraan_user_id.token,
+    )
 
 
 def update_env_promotes_config(request, env_name, stage_name, data):
-    return deployclient.put("/envs/%s/%s/promotes" % (env_name, stage_name),
-                            request.teletraan_user_id.token, data=data)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/promotes",
+        request.teletraan_user_id.token,
+        data=data,
+    )
 
 
 def delete_env(request, env_name, stage_name):
-    return deployclient.delete("/envs/%s/%s" % (env_name, stage_name),
-                               request.teletraan_user_id.token)
+    return deployclient.delete(
+        f"/envs/{env_name}/{stage_name}", request.teletraan_user_id.token
+    )
 
 
 def get_config_history(request, env_name, stage_name, index, size):
     params = [('pageIndex', index), ('pageSize', size)]
-    return deployclient.get("/envs/%s/%s/history" % (env_name, stage_name),
-                            request.teletraan_user_id.token, params=params)
+    return deployclient.get(
+        f"/envs/{env_name}/{stage_name}/history",
+        request.teletraan_user_id.token,
+        params=params,
+    )
 
 
 def set_active_max_parallel(env):
@@ -247,29 +305,47 @@ def disable_all_env_changes(request, description):
 
 def enable_env_changes(request, env_name, stage_name, description):
     params = [("actionType", "ENABLE"), ("description", description)]
-    return deployclient.post("/envs/%s/%s/actions" % (env_name, stage_name), request.teletraan_user_id.token,
-                             params=params)
+    return deployclient.post(
+        f"/envs/{env_name}/{stage_name}/actions",
+        request.teletraan_user_id.token,
+        params=params,
+    )
 
 
 def disable_env_changes(request, env_name, stage_name, description):
     params = [("actionType", "DISABLE"), ("description", description)]
-    return deployclient.post("/envs/%s/%s/actions" % (env_name, stage_name), request.teletraan_user_id.token,
-                             params=params)
+    return deployclient.post(
+        f"/envs/{env_name}/{stage_name}/actions",
+        request.teletraan_user_id.token,
+        params=params,
+    )
 
 
 def pause_hosts(request, env_name, stage_name, host_ids):
     params = [("actionType", "PAUSED_BY_USER")]
-    return deployclient.put("/envs/%s/%s/deploys/hostactions" % (env_name, stage_name), request.teletraan_user_id.token,
-                            params=params, data=host_ids)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/deploys/hostactions",
+        request.teletraan_user_id.token,
+        params=params,
+        data=host_ids,
+    )
 
 
 def resume_hosts(request, env_name, stage_name, host_ids):
     params = [("actionType", "NORMAL")]
-    return deployclient.put("/envs/%s/%s/deploys/hostactions" % (env_name, stage_name), request.teletraan_user_id.token,
-                            params=params, data=host_ids)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/deploys/hostactions",
+        request.teletraan_user_id.token,
+        params=params,
+        data=host_ids,
+    )
 
 
 def reset_hosts(request, env_name, stage_name, host_ids):
     params = [("actionType", "RESET")]
-    return deployclient.put("/envs/%s/%s/deploys/hostactions" % (env_name, stage_name), request.teletraan_user_id.token,
-                            params=params, data=host_ids)
+    return deployclient.put(
+        f"/envs/{env_name}/{stage_name}/deploys/hostactions",
+        request.teletraan_user_id.token,
+        params=params,
+        data=host_ids,
+    )

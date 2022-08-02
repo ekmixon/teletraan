@@ -39,9 +39,7 @@ def _convert_opentsdb_data(dps):
 
 def _get_latest_metrics(url):
     response = urllib2.urlopen(url)
-    data = json.loads(response.read())
-    # Return the first datapoint in the datapoints list
-    if data:
+    if data := json.loads(response.read()):
         if 'datapoints' in data[0] and len(data[0]['datapoints']) != 0:
             return data[0]['datapoints']
             # Check for TSDB response
@@ -52,16 +50,20 @@ def _get_latest_metrics(url):
 
 def get_service_metrics(request, name, stage):
     metrics = environs_helper.get_env_metrics_config(request, name, stage)
-    data = {}
-    for metric in metrics:
-        data[metric['title']] = _get_latest_metrics(metric['url'])
+    data = {
+        metric['title']: _get_latest_metrics(metric['url'])
+        for metric in metrics
+    }
+
     return HttpResponse(json.dumps({'html': data}), content_type="application/json")
 
 
 def get_site_health_metrics(request):
-    data = {}
-    for metric in SITE_METRICS_CONFIGS:
-        data[metric['title']] = _get_latest_metrics(metric['url'])
+    data = {
+        metric['title']: _get_latest_metrics(metric['url'])
+        for metric in SITE_METRICS_CONFIGS
+    }
+
     return HttpResponse(json.dumps({'html': data}), content_type="application/json")
 
 
@@ -79,10 +81,11 @@ def get_service_alarms(request, name, stage):
         value = _get_latest_alarm(alarm['alarmUrl'])
         if value and value["triggered"]:
             alarms[alarm['name']] = value
-    html = render_to_string('configs/alarm_details.tmpl', {
-        "alarms": alarms,
-        "hasAlarm": True if alarms else False,
-    })
+    html = render_to_string(
+        'configs/alarm_details.tmpl',
+        {"alarms": alarms, "hasAlarm": bool(alarms)},
+    )
+
     return HttpResponse(html)
 
 
@@ -104,10 +107,7 @@ def _get_backend_health():
 
 def health_check(request):
     try:
-        # The fact that we can call backend health check, and return,
-        # suggest UI, backend and mysql all in relatively good health
-        result = _get_backend_health()
-        if result:
+        if result := _get_backend_health():
             return HttpResponse("OK", content_type="text/plain")
     except Exception:
         pass
@@ -127,9 +127,9 @@ def get_latency_metrics(request, group_name):
 
     try:
         for env in envs:
-            name = "{}.{}".format(env["envName"], env["stageName"])
+            name = f'{env["envName"]}.{env["stageName"]}'
             stage_names.append(name)
-            metric_name1 = "launch_latency.{}".format(name)
+            metric_name1 = f"launch_latency.{name}"
             launch_data_points = autoscaling_metrics_helper.get_latency_data(request, env["id"],
                                                                              "LAUNCH", settings.DEFAULT_START_TIME)
             json_data = []
@@ -138,7 +138,7 @@ def get_latency_metrics(request, group_name):
                 json_data.append([timestamp, value])
             util_data[metric_name1] = json_data
 
-            metric_name2 = "deploy_latency.{}".format(name)
+            metric_name2 = f"deploy_latency.{name}"
             deploy_data_points = autoscaling_metrics_helper.get_latency_data(request, env["id"],
                                                                              "DEPLOY", settings.DEFAULT_START_TIME)
             json_data2 = []
@@ -163,8 +163,8 @@ def get_launch_rate(request, group_name):
     try:
         util_data["metric_names"] = []
         for env in envs:
-            metric_name = "mimmax:autoscaling.{}.{}.first_deploy.failed".format(
-                env["envName"], env["stageName"])
+            metric_name = f'mimmax:autoscaling.{env["envName"]}.{env["stageName"]}.first_deploy.failed'
+
             rate_data_points = autoscaling_metrics_helper.get_raw_metrics(request, metric_name,
                                                                           settings.DEFAULT_START_TIME)
             json_data = []

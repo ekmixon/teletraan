@@ -21,26 +21,38 @@ deployclient = DeployClient()
 
 
 def get_env_users(request, env_name, user_types):
-    return deployclient.get("/envs/%s/%s" % (env_name, user_types), request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{user_types}", request.teletraan_user_id.token
+    )
 
 
 def get_env_user(request, env_name, user_name, user_types):
-    return deployclient.get("/envs/%s/%s/%s" % (env_name, user_types, user_name),
-                            request.teletraan_user_id.token)
+    return deployclient.get(
+        f"/envs/{env_name}/{user_types}/{user_name}",
+        request.teletraan_user_id.token,
+    )
 
 
 def delete_env_user(request, env_name, user_name, user_types):
-    return deployclient.delete("/envs/%s/%s/%s" % (env_name, user_types, user_name),
-                               request.teletraan_user_id.token)
+    return deployclient.delete(
+        f"/envs/{env_name}/{user_types}/{user_name}",
+        request.teletraan_user_id.token,
+    )
 
 
 def create_env_user(request, env_name, user_name, role, user_types):
     user = {"name": user_name, "role": role}
-    return deployclient.post("/envs/%s/%s" % (env_name, user_types),
-                             request.teletraan_user_id.token, data=user)
+    return deployclient.post(
+        f"/envs/{env_name}/{user_types}",
+        request.teletraan_user_id.token,
+        data=user,
+    )
 
 
 def update_env_user(request, env_name, user_name, role, user_types):
     user = {"role": role}
-    return deployclient.put("/envs/%s/%s/%s" % (env_name, user_types, user_name),
-                            request.teletraan_user_id.token, data=user)
+    return deployclient.put(
+        f"/envs/{env_name}/{user_types}/{user_name}",
+        request.teletraan_user_id.token,
+        data=user,
+    )

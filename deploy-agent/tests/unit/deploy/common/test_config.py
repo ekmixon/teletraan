@@ -42,11 +42,13 @@ class TestConfigFunctions(tests.TestCase):
         cls.config = Config(config_reader=config_reader)
 
     def test_get_target(self):
-        deploy_goal = {}
-        deploy_goal['deployId'] = '123'
-        deploy_goal['stageName'] = 'beta'
-        deploy_goal['envName'] = 'pinboard'
-        deploy_goal['deployStage'] = DeployStage.SERVING_BUILD
+        deploy_goal = {
+            'deployId': '123',
+            'stageName': 'beta',
+            'envName': 'pinboard',
+            'deployStage': DeployStage.SERVING_BUILD,
+        }
+
         ping_response = {'deployGoal': deploy_goal, 'opCode': OpCode.NOOP}
 
         response = PingResponse(jsonValue=ping_response)

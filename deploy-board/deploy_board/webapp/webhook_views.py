@@ -54,28 +54,27 @@ class EnvWebhooksView(View):
         for key, value in page_data.iteritems():
             if key.startswith('url_'):
                 label = key.split('_')[1]
-                body = "body_%s" % label
-                headers = "headers_%s" % label
-                deploy_type = "deploy-type_%s" % label
-                method = "method_%s" % label
-                version = "version_%s" % label
-                webhook = {}
-                webhook["url"] = value
-                webhook['version'] = page_data[version]
-                webhook['method'] = page_data[method]
-                webhook['body'] = page_data[body].strip()
+                body = f"body_{label}"
+                headers = f"headers_{label}"
+                deploy_type = f"deploy-type_{label}"
+                method = f"method_{label}"
+                version = f"version_{label}"
+                webhook = {
+                    "url": value,
+                    'version': page_data[version],
+                    'method': page_data[method],
+                    'body': page_data[body].strip(),
+                }
+
                 webhook['headers'] = page_data[headers]
                 type = page_data[deploy_type]
                 # Determine whether this is a pre or post webhook
                 if type == "post":
                     post_webhooks.append(webhook)
-                if type == "pre":
+                elif type == "pre":
                     pre_webhooks.append(webhook)
 
-        envWebhooks = {}
-        envWebhooks['postDeployHooks'] = post_webhooks
-        envWebhooks['preDeployHooks'] = pre_webhooks
-        return envWebhooks
+        return {'postDeployHooks': post_webhooks, 'preDeployHooks': pre_webhooks}
 
     def post(self, request, name, stage):
         envWebhooks = self._parse_webhooks_configs(request.POST)

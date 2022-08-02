@@ -86,8 +86,7 @@ def get_all_builds(request):
         current_build = builds_helper.get_build_and_tag(request, current_build_id)
         current_build = current_build.get('build')
     if deploy_id:
-        deploy_config = deploys_helper.get(request, deploy_id)
-        if deploy_config:
+        if deploy_config := deploys_helper.get(request, deploy_id):
             deploy_state = deploy_config.get('state', None)
 
     html = render_to_string('builds/pick_a_build.tmpl', {
@@ -181,24 +180,21 @@ def compare_commits_datatables(request):
 
 
 def tag_build(request, id):
-    if request.method == "POST":
-        build_info = builds_helper.get_build_and_tag(request, id)
-        current_tag = build_info.get("tag")
-
-        if current_tag:
-            tagged_build = json.loads(current_tag["metaInfo"])
-            if tagged_build["id"] == id:
-                log.info("There is already a tag associated with the build. Remove it")
-                builds_helper.del_build_tag(request, current_tag["id"])
-        tag = {"targetId":id, "targetType":"Build", "comments":request.POST["comments"]}
-        value = request.POST["tag_value"]
-        if value.lower() == "good":
-            tag["value"] = tags_helper.TagValue.GOOD_BUILD
-        elif value.lower()=="bad":
-            tag["value"] = tags_helper.TagValue.BAD_BUILD
-        else:
-            return HttpResponse(status=400)
-        builds_helper.set_build_tag(request, tag)
-        return redirect("/builds/{0}/".format(id))
-    else:
+    if request.method != "POST":
         return HttpResponse(status=405)
+    build_info = builds_helper.get_build_and_tag(request, id)
+    if current_tag := build_info.get("tag"):
+        tagged_build = json.loads(current_tag["metaInfo"])
+        if tagged_build["id"] == id:
+            log.info("There is already a tag associated with the build. Remove it")
+            builds_helper.del_build_tag(request, current_tag["id"])
+    tag = {"targetId":id, "targetType":"Build", "comments":request.POST["comments"]}
+    value = request.POST["tag_value"]
+    if value.lower() == "good":
+        tag["value"] = tags_helper.TagValue.GOOD_BUILD
+    elif value.lower()=="bad":
+        tag["value"] = tags_helper.TagValue.BAD_BUILD
+    else:
+        return HttpResponse(status=400)
+    builds_helper.set_build_tag(request, tag)
+    return redirect("/builds/{0}/".format(id))

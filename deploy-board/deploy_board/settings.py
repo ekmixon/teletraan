@@ -22,6 +22,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 import logging
@@ -98,10 +99,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL")
 if LOG_LEVEL == 'DEBUG':
     DEBUG = True
     TEMPLATE_DEBUG = True
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = ['*']
-
+ALLOWED_HOSTS = ['*']
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -114,16 +112,16 @@ LOGGING = {
         'default': {
             'level': LOG_LEVEL,
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '%s/service.log' % LOG_DIR,
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'filename': f'{LOG_DIR}/service.log',
+            'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
             'formatter': 'standard',
         },
         'request_handler': {
             'level': LOG_LEVEL,
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '%s/access.log' % LOG_DIR,
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'filename': f'{LOG_DIR}/access.log',
+            'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
             'formatter': 'standard',
         },
@@ -137,15 +135,16 @@ LOGGING = {
         '': {
             'handlers': ['default', 'console'],
             'level': LOG_LEVEL,
-            'propagate': True
+            'propagate': True,
         },
         'django.request': {
             'handlers': ['request_handler'],
             'level': LOG_LEVEL,
-            'propagate': False
+            'propagate': False,
         },
-    }
+    },
 }
+
 
 # Application definition
 INSTALLED_APPS = (
@@ -224,13 +223,16 @@ TELETRAAN_SERVICE_HEALTHCHECK_URL = os.getenv("TELETRAAN_SERVICE_HEALTHCHECK_URL
 DISPLAY_STOPPING_HOSTS = os.getenv("DISPLAY_STOPPING_HOSTS", "true")
 
 # Pinterest specific settings
-IS_PINTEREST = True if os.getenv("IS_PINTEREST", "false") == "true" else False
+IS_PINTEREST = os.getenv("IS_PINTEREST", "false") == "true"
 BUILD_URL = os.getenv("BUILD_URL", None)
 USER_DATA_CONFIG_SETTINGS_WIKI = os.getenv("USER_DATA_CONFIG_SETTINGS_WIKI", None)
 
-TELETRAAN_DISABLE_CREATE_ENV_PAGE = True if os.getenv("TELETRAAN_DISABLE_CREATE_ENV_PAGE", "false") == "true" else False
+TELETRAAN_DISABLE_CREATE_ENV_PAGE = (
+    os.getenv("TELETRAAN_DISABLE_CREATE_ENV_PAGE", "false") == "true"
+)
+
 TELETRAAN_REDIRECT_CREATE_ENV_PAGE_URL = os.getenv("TELETRAAN_REDIRECT_CREATE_ENV_PAGE_URL", None)
-IS_DURING_CODE_FREEZE = True if os.getenv("TELETRAAN_CODE_FREEZE", "false") == "true" else False
+IS_DURING_CODE_FREEZE = os.getenv("TELETRAAN_CODE_FREEZE", "false") == "true"
 TELETRAAN_CODE_FREEZE_URL = os.getenv("TELETRAAN_CODE_FREEZE_URL", None)
 TELETRAAN_JIRA_SOURCE_URL = os.getenv("TELETRAAN_JIRA_SOURCE_URL", None)
 TELETRAAN_TRANSFER_OWNERSHIP_URL = os.getenv("TELETRAAN_TRANSFER_OWNERSHIP_URL", None)
@@ -243,15 +245,12 @@ RODIMUS_SERVICE_URL = os.getenv("RODIMUS_SERVICE_URL", None)
 RODIMUS_SERVICE_VERSION = os.getenv("RODIMUS_SERVICE_VERSION", None)
 
 if IS_PINTEREST:
-    # use knox if present
-    KNOX_SESSION_ID = os.getenv("KNOX_SESSION_ID")
-    if KNOX_SESSION_ID:
+    if KNOX_SESSION_ID := os.getenv("KNOX_SESSION_ID"):
         from knox import Knox
 
         SECRET_KEY = Knox().get_primary(KNOX_SESSION_ID)
 
-    ADMIN_OAUTH_SECRET_KNOX_ID = os.getenv("ADMIN_OAUTH_SECRET_KNOX_ID")
-    if ADMIN_OAUTH_SECRET_KNOX_ID:
+    if ADMIN_OAUTH_SECRET_KNOX_ID := os.getenv("ADMIN_OAUTH_SECRET_KNOX_ID"):
         from knox import Knox
 
         OAUTH_CLIENT_SECRET = Knox().get_primary(ADMIN_OAUTH_SECRET_KNOX_ID)

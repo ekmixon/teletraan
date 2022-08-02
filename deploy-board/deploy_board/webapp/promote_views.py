@@ -31,9 +31,9 @@ class EnvPromoteConfigView(View):
         stages, env = common.get_all_stages(envs, stage)
         env_promote = environs_helper.get_env_promotes_config(request, name, stage)
         stage_names = ['BUILD']
-        for stage_name in stages:
-            if stage_name != env['stageName']:
-                stage_names.append(stage_name)
+        stage_names.extend(
+            stage_name for stage_name in stages if stage_name != env['stageName']
+        )
 
         if request.is_ajax():
             # return data for ajax calls
@@ -56,12 +56,14 @@ class EnvPromoteConfigView(View):
 
     def post(self, request, name, stage):
         query_dict = request.POST
-        data = {}
-        data["type"] = query_dict["promoteType"]
-        data["predStage"] = query_dict["predStageName"]
-        data["failPolicy"] = query_dict["promoteFailPolicy"]
-        data["disablePolicy"] = query_dict["promoteDisablePolicy"]
-        data["schedule"] = query_dict["promoteSchedule"]
+        data = {
+            "type": query_dict["promoteType"],
+            "predStage": query_dict["predStageName"],
+            "failPolicy": query_dict["promoteFailPolicy"],
+            "disablePolicy": query_dict["promoteDisablePolicy"],
+            "schedule": query_dict["promoteSchedule"],
+        }
+
         if 'promoteDelay' in query_dict:
             data["delay"] = int(query_dict["promoteDelay"])
         if "promoteQueueSize" in query_dict:

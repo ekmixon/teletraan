@@ -38,11 +38,9 @@ class Caller(object):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE, **kwargs)
             while process.poll() is None:
-                line = process.stdout.readline()
-                if line:
+                if line := process.stdout.readline():
                     output = output + "[%.2f]" % (time.time() - start) + line
-                line = process.stderr.readline()
-                if line:
+                if line := process.stderr.readline():
                     output = output + "[%.2f]" % (time.time() - start) + line
             temp, error = process.communicate()
             return output.strip(), error.strip(), process.poll()

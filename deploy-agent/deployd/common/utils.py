@@ -49,7 +49,7 @@ def touch(fname, times=None):
         with open(fname, 'a'):
             os.utime(fname, times)
     except IOError:
-        log.error('Failed touching host type file {}'.format(fname))
+        log.error(f'Failed touching host type file {fname}')
 
 
 def hash_file(filepath):
@@ -68,12 +68,15 @@ def debug(sig, frame):
     """Interrupt running process, and provide a python prompt for
     interactive debugging."""
     d = {'_frame': frame}      # Allow access to frame object.
-    d.update(frame.f_globals)  # Unless shadowed by global
+    d |= frame.f_globals
     d.update(frame.f_locals)
 
     i = code.InteractiveConsole(d)
-    message = "Signal recieved : entering python shell.\nTraceback:\n"
-    message += ''.join(traceback.format_stack(frame))
+    message = (
+        "Signal recieved : entering python shell.\nTraceback:\n"
+        + ''.join(traceback.format_stack(frame))
+    )
+
     i.interact(message)
 
 
@@ -86,9 +89,7 @@ def mkdir_p(path):
         os.makedirs(path)
     except OSError as ex:
         # if the directory exists, silently exits
-        if ex.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
+        if ex.errno != errno.EEXIST or not os.path.isdir(path):
             raise
 
 
@@ -115,16 +116,12 @@ def run_prereqs(config):
 
 def get_info_from_facter(keys):
     try:
-        log.info("Fetching {} keys from facter".format(keys))
+        log.info(f"Fetching {keys} keys from facter")
         cmd = ['facter', '-p', '-j']
         cmd.extend(keys)
-        output = subprocess.check_output(cmd)
-        if output:
-            return json.loads(output)
-        else:
-            return None
+        return json.loads(output) if (output := subprocess.check_output(cmd)) else None
     except:
-        log.error("Failed to get info from facter by keys {}".format(keys))
+        log.error(f"Failed to get info from facter by keys {keys}")
         return None
 
 def check_not_none(arg, msg=None):

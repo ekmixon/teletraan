@@ -84,7 +84,7 @@ class Client(BaseClient):
         else:
             # read host_info file
             host_info_fn = self._config.get_host_info_fn()
-            lock_fn = '{}.lock'.format(host_info_fn)
+            lock_fn = f'{host_info_fn}.lock'
             lock = lockfile.FileLock(lock_fn)
             if os.path.exists(host_info_fn):
                 with lock, open(host_info_fn, "r+") as f:
@@ -100,21 +100,23 @@ class Client(BaseClient):
                     self._id = host_info.get("id")
 
                 if not self._hostgroup:
-                    host_group = host_info.get("groups", None)
-                    if host_group:
+                    if host_group := host_info.get("groups", None):
                         self._hostgroup = host_group.split(",")
 
                 # Hosts brought up outside of ASG or Teletraan might not have ASG
                 if not self._autoscaling_group:
-                    self._autoscaling_group = host_info.get("autoscaling-group", None)
+                    self._autoscaling_group = host_info.get("autoscaling-group")
 
                 if not self._availability_zone:
-                    self._availability_zone = host_info.get("availability-zone", None)
+                    self._availability_zone = host_info.get("availability-zone")
 
                 if not self._stage_type:
-                    self._stage_type = host_info.get("stage-type", None)
+                    self._stage_type = host_info.get("stage-type")
             else:
-                log.warn("Cannot find host information file {}. See doc for more details".format(host_info_fn))
+                log.warn(
+                    f"Cannot find host information file {host_info_fn}. See doc for more details"
+                )
+
 
         # patch missing part
         if not self._hostname:
@@ -132,8 +134,6 @@ class Client(BaseClient):
                 self._ip = socket.gethostbyname(self._hostname)
             except Exception:
                 log.warn('Host ip information does not exist.')
-                pass
-        
         if IS_PINTEREST and self._use_host_info is False:
             # Read new keys from facter always
             az_key = self._config.get_facter_az_key()
@@ -164,10 +164,10 @@ class Client(BaseClient):
             if not self._stage_type:
                 self._stage_type = facter_data.get(stage_type_key, None)
 
-        log.info("Host information is loaded. "
-                 "Host name: {}, IP: {}, host id: {}, agent_version={}, autoscaling_group: {}, "
-                 "availability_zone: {}, stage_type: {}, group: {}".format(self._hostname, self._ip, self._id, 
-                 self._agent_version, self._autoscaling_group, self._availability_zone, self._stage_type, self._hostgroup))
+        log.info(
+            f"Host information is loaded. Host name: {self._hostname}, IP: {self._ip}, host id: {self._id}, agent_version={self._agent_version}, autoscaling_group: {self._autoscaling_group}, availability_zone: {self._availability_zone}, stage_type: {self._stage_type}, group: {self._hostgroup}"
+        )
+
         return True
 
     def send_reports(self, env_reports=None):
@@ -195,7 +195,7 @@ class Client(BaseClient):
                                         tags={'host': self._hostname}):
                     ping_response = self.send_reports_internal(ping_request)
 
-                log.debug('%s -> %s' % (ping_request, ping_response))
+                log.debug(f'{ping_request} -> {ping_response}')
                 return ping_response
             else:
                 log.error("Fail to read host info")
@@ -212,5 +212,4 @@ class Client(BaseClient):
     @retry(ExceptionToCheck=Exception, delay=1, tries=3)
     def send_reports_internal(self, request):
         ping_service = RestfulClient(self._config)
-        response = ping_service.ping(request)
-        return response
+        return ping_service.ping(request)

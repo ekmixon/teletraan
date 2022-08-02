@@ -64,23 +64,23 @@ class EnvMetricsView(View):
             if not value:
                 continue
             if key.startswith('TELETRAAN_'):
-                metricsConfig = {}
                 name = key[len('TELETRAAN_'):]
                 slugified_name = self._slugify(name)
-                metricsConfig['title'] = name
-                metricsConfig['url'] = value[0]
-                min_string = "min_%s" % slugified_name
-                max_string = "max_%s" % slugified_name
-                color_string = "color-selection_%s" % slugified_name
+                metricsConfig = {'title': name, 'url': value[0]}
+                min_string = f"min_{slugified_name}"
+                max_string = f"max_{slugified_name}"
+                color_string = f"color-selection_{slugified_name}"
                 metricsSpecs = []
 
-                if min_string in page_data.keys():
+                if min_string in page_data:
                     num_specs = len(page_data[min_string])
                     for i in range(num_specs):
-                        spec = {}
-                        spec['min'] = float(page_data[min_string][i])
-                        spec['max'] = float(page_data[max_string][i])
-                        spec['color'] = page_data[color_string][i]
+                        spec = {
+                            'min': float(page_data[min_string][i]),
+                            'max': float(page_data[max_string][i]),
+                            'color': page_data[color_string][i],
+                        }
+
                         metricsSpecs.append(spec)
                 metricsConfig["specs"] = metricsSpecs
                 configs.append(metricsConfig)

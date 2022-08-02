@@ -15,6 +15,7 @@
 # -*- coding: utf-8 -*-
 """Collection of all map based config views
 """
+
 import json
 from django.http import HttpResponse
 from django.middleware.csrf import get_token
@@ -28,18 +29,19 @@ from helpers import environs_helper
 AC_FLAVOR = 'AC'
 # script config map
 SC_FLAVOR = 'SC'
-CUSTOMIZATION = {}
-AC = {}
-AC['panelTitle'] = "Agent Config"
-AC['flavor'] = AC_FLAVOR
-AC['configMapPath'] = "agent"
-CUSTOMIZATION[AC_FLAVOR] = AC
+AC = {
+    'panelTitle': "Agent Config",
+    'flavor': AC_FLAVOR,
+    'configMapPath': "agent",
+}
 
-SC = {}
-SC['panelTitle'] = "Script Config"
-SC['flavor'] = SC_FLAVOR
-SC['configMapPath'] = "script"
-CUSTOMIZATION[SC_FLAVOR] = SC
+SC = {
+    'panelTitle': "Script Config",
+    'flavor': SC_FLAVOR,
+    'configMapPath': "script",
+}
+
+CUSTOMIZATION = {AC_FLAVOR: AC, SC_FLAVOR: SC}
 
 
 class EnvConfigMapView(View):

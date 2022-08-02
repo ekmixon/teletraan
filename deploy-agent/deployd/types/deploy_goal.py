@@ -51,10 +51,4 @@ class DeployGoal(object):
             self.isDocker = jsonValue.get('isDocker')
 
     def __str__(self):
-        return "DeployGoal(deployId={}, envId={}, envName={}, stageName={}, " \
-               "deployStage={}, build={}, deployAlias={}, agentConfig={}," \
-               "scriptVariables={}, firstDeploy={}, isDocker={})".format(self.deployId, self.envId, self.envName,
-                                                            self.stageName, self.deployStage,
-                                                            self.build, self.deployAlias,
-                                                            self.config, self.scriptVariables,
-                                                            self.firstDeploy, self.isDocker)
+        return f"DeployGoal(deployId={self.deployId}, envId={self.envId}, envName={self.envName}, stageName={self.stageName}, deployStage={self.deployStage}, build={self.build}, deployAlias={self.deployAlias}, agentConfig={self.config},scriptVariables={self.scriptVariables}, firstDeploy={self.firstDeploy}, isDocker={self.isDocker})"

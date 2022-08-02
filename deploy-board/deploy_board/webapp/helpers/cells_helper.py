@@ -28,4 +28,6 @@ def get_all(request):
 
 
 def get_by_provider(request, provider):
-    return rodimus_client.get("/cells/provider/%s" % provider, request.teletraan_user_id.token)
+    return rodimus_client.get(
+        f"/cells/provider/{provider}", request.teletraan_user_id.token
+    )

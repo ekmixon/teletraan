@@ -41,7 +41,7 @@ class Helper(object):
         except OSError:
             # if builds_dir doesn't exist, there is no local build,
             # go on and return empty list.
-            log.debug("OSError: {} does not exist.".format(builds_dir))
+            log.debug(f"OSError: {builds_dir} does not exist.")
         finally:
             return builds
 
@@ -53,7 +53,7 @@ class Helper(object):
              local_fn = u'{}-{}.{}'.format(self._build_name, self._build, extension)
         """
         prefix = "{0}-".format(env_name)
-       
+
         if filename.startswith(prefix) and "." in filename:
             return True, filename[len(prefix):filename.index(".")]
         return False, None
@@ -87,14 +87,14 @@ class Helper(object):
                   build: build id
                   build_name: environment name
         """
-        local_fn = '{}-{}.*'.format(build_name, build)
+        local_fn = f'{build_name}-{build}.*'
         try:
             # Remove extracted pointer from disk
-            extracted_file = os.path.join(base_dir, '{}.extracted'.format(build))
+            extracted_file = os.path.join(base_dir, f'{build}.extracted')
             if os.path.exists(extracted_file):
                 os.remove(extracted_file)
             # Remove staged pointer from disk
-            staged_file = os.path.join(base_dir, '{}.staged'.format(build))
+            staged_file = os.path.join(base_dir, f'{build}.staged')
             if os.path.exists(staged_file):
                 os.remove(staged_file)
         except OSError:
@@ -108,9 +108,7 @@ class Helper(object):
             log.exception("Failed: remove build directory from disk")
 
         try:
-            # Remove archive from disk
-            fns = glob.glob(os.path.join(base_dir, local_fn))
-            if fns:
+            if fns := glob.glob(os.path.join(base_dir, local_fn)):
                 os.remove(fns[0])
         except OSError:
             log.exception("Failed: remove build archive from disk")
